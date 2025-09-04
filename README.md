@@ -26,28 +26,42 @@ A command-line utility that provides a simple wrapper around the `gcloud` CLI fo
 
 ### Pre-built Binaries
 
-Download the latest release for your platform from the [releases page](https://github.com/daigo/gsecutil/releases):
+Download the latest release for your platform from the [releases page](https://github.com/yourusername/gsecutil/releases):
 
-- **Linux (amd64)**: `gsecutil-linux-amd64`
-- **Linux (arm64)**: `gsecutil-linux-arm64`
-- **macOS (Intel)**: `gsecutil-darwin-amd64`
-- **macOS (Apple Silicon)**: `gsecutil-darwin-arm64`
-- **Windows**: `gsecutil-windows-amd64.exe`
-
-### Build from Source
-
-```bash
-git clone https://github.com/daigo/gsecutil.git
-cd gsecutil
-make build
-# or for all platforms:
-make build-all
-```
+| Platform | Architecture | Download |
+|----------|--------------|----------|
+| Linux | x64 | `gsecutil-linux-amd64` |
+| Linux | ARM64 | `gsecutil-linux-arm64` |
+| macOS | Intel | `gsecutil-darwin-amd64` |
+| macOS | Apple Silicon | `gsecutil-darwin-arm64` |
+| Windows | x64 | `gsecutil-windows-amd64.exe` |
 
 ### Install with Go
 
 ```bash
-go install github.com/daigo/gsecutil@latest
+go install github.com/yourusername/gsecutil@latest
+```
+
+### Build from Source
+
+For comprehensive build instructions, see [BUILD.md](BUILD.md).
+
+**Quick build:**
+```bash
+git clone https://github.com/yourusername/gsecutil.git
+cd gsecutil
+
+# Build for current platform
+make build
+# OR
+./build.sh          # Linux/macOS
+.\build.ps1         # Windows
+
+# Build for all platforms
+make build-all
+# OR
+./build.sh all      # Linux/macOS
+.\build.ps1 all     # Windows
 ```
 
 ## Usage
@@ -335,68 +349,67 @@ gcloud config set project YOUR_PROJECT_ID
 gcloud auth activate-service-account --key-file=service-account.json
 ```
 
-## Building
+## Building from Source
 
-### Development
+For comprehensive build instructions including cross-platform builds, CI/CD integration, and troubleshooting, see **[BUILD.md](BUILD.md)**.
+
+### Quick Development Setup
 
 ```bash
-# Install dependencies
-make deps
+# Clone and build
+git clone https://github.com/yourusername/gsecutil.git
+cd gsecutil
 
-# Build for current platform
-make build
+# Install dependencies and build
+make deps && make build
 
-# Run tests
-make test
+# Run tests and validation
+make test && make vet && make fmt
 
-# Format code
-make fmt
-
-# Run development version
+# Quick development build and test
 make dev
 ```
 
-### Cross-platform Builds
+### Build Methods
 
-```bash
-# Build for all platforms
-make build-all
+1. **Makefile** (Linux/macOS/WSL): `make build`
+2. **Bash Script** (Linux/macOS): `./build.sh`
+3. **PowerShell Script** (Windows): `.\build.ps1`
+4. **Manual Go**: `go build -o build/gsecutil .`
 
-# Or use the build script
-./build.sh
-```
-
-### Available Make Targets
-
-- `make all` - Build for all platforms
-- `make build` - Build for current platform
-- `make build-linux` - Build for Linux amd64
-- `make build-windows` - Build for Windows amd64
-- `make build-darwin` - Build for macOS amd64
-- `make clean` - Clean build directory
-- `make test` - Run tests
-- `make fmt` - Format code
-- `make install` - Install locally
-
-## Requirements
+## System Requirements
 
 ### Runtime Requirements
 
-- `gcloud` CLI installed and in PATH
-- Google Cloud SDK authenticated
-- Secret Manager API enabled in your Google Cloud project
+- **Google Cloud SDK**: `gcloud` CLI installed and in PATH
+- **Authentication**: Google Cloud SDK authenticated (`gcloud auth login`)
+- **API Access**: Secret Manager API enabled in your Google Cloud project
+- **Permissions**: Appropriate IAM roles (see [Troubleshooting](#troubleshooting))
 
 ### Build Requirements
 
-- Go 1.21 or later
-- Make (optional, for using Makefile)
+- **Go**: Version 1.21 or later
+- **Make**: Optional, for using Makefile (Linux/macOS/WSL)
+- **Git**: For cloning the repository
 
-## Security Notes
+See [BUILD.md](BUILD.md) for detailed build instructions.
 
-- Secret values are never logged or stored by `gsecutil`
-- Interactive prompts use hidden input for security
-- Clipboard operations are performed securely using OS-native APIs
-- Always use `--force` flag carefully in automated environments
+## Security & Best Practices
+
+### Security Features
+
+- **No persistent storage**: Secret values are never logged or stored by `gsecutil`
+- **Secure input**: Interactive prompts use hidden password input
+- **OS-native clipboard**: Clipboard operations use secure OS-native APIs
+- **gcloud delegation**: All operations delegate to authenticated `gcloud` CLI
+
+### Best Practices
+
+- **Use `--force` carefully**: Always review before using `--force` in automated environments
+- **Environment variables**: Set `GOOGLE_CLOUD_PROJECT` to avoid repetitive `--project` flags
+- **Version control**: Use specific secret versions in production (`--version N`)
+- **Audit regularly**: Monitor secret access with `gsecutil audit secret-name`
+- **Rotate secrets**: Regular secret rotation using `gsecutil update`
 
 ## Troubleshooting
 
@@ -427,14 +440,37 @@ Add verbose output to gcloud commands by setting:
 export CLOUDSDK_CORE_VERBOSITY=debug
 ```
 
+## Documentation
+
+- **[BUILD.md](BUILD.md)** - Comprehensive build instructions for all platforms
+- **[WARP.md](WARP.md)** - Development guidance for WARP AI terminal integration
+- **README.md** - This file, usage and overview
+
 ## Contributing
 
+Contributions are welcome! Please follow these steps:
+
 1. Fork the repository
-2. Create a feature branch
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
 3. Make your changes
 4. Add tests if applicable
-5. Run `make fmt` and `make test`
-6. Submit a pull request
+5. Run quality checks: `make fmt && make vet && make test`
+6. Commit your changes: `git commit -am 'Add amazing feature'`
+7. Push to the branch: `git push origin feature/amazing-feature`
+8. Submit a pull request
+
+### Development Workflow
+
+```bash
+# Setup development environment
+make deps
+
+# Make your changes, then:
+make fmt vet test     # Quality checks
+make dev             # Quick build and test
+```
+
+See [BUILD.md](BUILD.md) for detailed development and build instructions.
 
 ## License
 
