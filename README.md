@@ -9,9 +9,10 @@ A command-line utility that provides a simple wrapper around the `gcloud` CLI fo
 - **Clipboard integration** - copy secret values directly to clipboard
 - **Version metadata** - show version numbers, creation times, and states
 - **Version history** - view all versions with detailed timestamps
+- **Audit logging** - view who accessed secrets, when, and what operations were performed
 - **Interactive secret input** with hidden password prompts
 - **File-based secret input** for loading secrets from files
-- **Comprehensive command set**: get, create, update, delete, list, describe
+- **Comprehensive command set**: get, create, update, delete, list, describe, audit
 - **Flexible output formatting** (JSON, YAML, table)
 - **Project-aware** with global project flag support
 
@@ -156,6 +157,24 @@ gsecutil describe my-secret --show-versions
 gsecutil describe my-secret --format json
 ```
 
+#### Audit Secret
+
+View audit log entries for a secret to see who accessed it, when, and what operations were performed:
+
+```bash
+# Show audit log for the last 7 days
+gsecutil audit my-secret
+
+# Show audit log for the last 30 days
+gsecutil audit my-secret --days 30
+
+# Show audit log with JSON output
+gsecutil audit my-secret --format json
+
+# Limit the number of entries returned
+gsecutil audit my-secret --limit 10
+```
+
 ### Examples
 
 #### Basic Usage
@@ -185,6 +204,9 @@ gsecutil list
 
 # Get secret metadata with version history
 gsecutil describe database-password --show-versions
+
+# View audit log to see who accessed the secret
+gsecutil audit database-password
 ```
 
 ### Example Output
@@ -232,6 +254,22 @@ Version: 1
   ETag: "ghi789jkl012"
 ```
 
+#### Audit log output
+
+```bash
+$ gsecutil audit my-api-key
+Audit log entries for secret 'my-api-key' (last 7 days):
+
+TIMESTAMP            OPERATION                      USER                                     RESOURCE
+------------------------------------------------------------------------------------------------------------------------
+2025-09-04 14:30:15  ACCESS                         user@company.com                        .../secrets/my-api-key/versions/3
+2025-09-04 12:35:42  CREATE                         user@company.com                        .../secrets/my-api-key
+2025-09-03 09:15:30  UPDATE                         service-account@project.iam.gserviceac  .../secrets/my-api-key
+2025-09-02 16:20:10  GET_METADATA                   admin@company.com                        .../secrets/my-api-key
+
+Total entries: 4
+```
+
 #### Advanced Usage
 
 ```bash
@@ -253,6 +291,13 @@ gsecutil get api-key --version 3
 for secret in $(gsecutil list --format="value(name)"); do
   echo "Describing $secret:"
   gsecutil describe "$secret"
+done
+
+# Audit multiple secrets for security review
+for secret in critical-api-key database-password; do
+  echo "Audit log for $secret:"
+  gsecutil audit "$secret" --days 30
+  echo
 done
 ```
 
