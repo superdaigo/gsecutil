@@ -1,0 +1,225 @@
+name: Draft Release
+
+on:
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - '.github/**'
+      - 'docs/**'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  draft-release:
+    name: Create Draft Release
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && !contains(github.event.head_commit.message, '[skip draft]'))
+    
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch full history
+        
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+        
+    - name: Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+          
+    - name: Install dependencies
+      run: go mod download
+      
+    - name: Run tests
+      run: go test -v ./...
+      
+    - name: Generate next version
+      id: version
+      run: |
+        # Get the latest tag
+        LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+        echo "Latest tag: $LATEST_TAG"
+        
+        # Extract version number (remove 'v' prefix)
+        LATEST_VERSION=${LATEST_TAG#v}
+        
+        # Split version into parts
+        IFS='.' read -ra VERSION_PARTS <<< "$LATEST_VERSION"
+        MAJOR=${VERSION_PARTS[0]:-0}
+        MINOR=${VERSION_PARTS[1]:-0}
+        PATCH=${VERSION_PARTS[2]:-0}
+        
+        # Increment patch version
+        NEXT_PATCH=$((PATCH + 1))
+        NEXT_VERSION="$MAJOR.$MINOR.$NEXT_PATCH"
+        
+        echo "next_version=$NEXT_VERSION" >> $GITHUB_OUTPUT
+        echo "Next version: $NEXT_VERSION"
+        
+    - name: Check if draft release exists
+      id: check_draft
+      run: |
+        # Check if a draft release already exists for this version
+        DRAFT_EXISTS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          "https://api.github.com/repos/${{ github.repository }}/releases" | \
+          jq -r '.[] | select(.draft == true and .name == "Release ${{ steps.version.outputs.next_version }}") | .id' | head -1)
+        
+        if [ ! -z "$DRAFT_EXISTS" ]; then
+          echo "draft_id=$DRAFT_EXISTS" >> $GITHUB_OUTPUT
+          echo "Draft release exists: $DRAFT_EXISTS"
+        else
+          echo "No existing draft release found"
+        fi
+        
+    - name: Delete existing draft
+      if: steps.check_draft.outputs.draft_id != ''
+      run: |
+        curl -X DELETE \
+          -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          "https://api.github.com/repos/${{ github.repository }}/releases/${{ steps.check_draft.outputs.draft_id }}"
+        echo "Deleted existing draft release"
+        
+    - name: Generate changelog since last tag
+      id: changelog
+      run: |
+        LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+        
+        if [ -z "$LATEST_TAG" ]; then
+          # If no tags exist, get all commits
+          CHANGELOG=$(git log --pretty=format:"- %s (%h)" --reverse)
+        else
+          # Get commits since the latest tag
+          CHANGELOG=$(git log $LATEST_TAG..HEAD --pretty=format:"- %s (%h)" --reverse)
+        fi
+        
+        # If no new commits, create a placeholder
+        if [ -z "$CHANGELOG" ]; then
+          CHANGELOG="- No new changes since last release"
+        fi
+        
+        # Escape for JSON
+        CHANGELOG="${CHANGELOG//'%'/'%25'}"
+        CHANGELOG="${CHANGELOG//$'\n'/'%0A'}"
+        CHANGELOG="${CHANGELOG//$'\r'/'%0D'}"
+        
+        echo "changelog=$CHANGELOG" >> $GITHUB_OUTPUT
+        
+    - name: Build all platforms
+      run: |
+        VERSION=${{ steps.version.outputs.next_version }}
+        mkdir -p build
+        
+        # Build for each platform
+        GOOS=linux GOARCH=amd64 go build -ldflags "-X main.Version=$VERSION -s -w" -o build/gsecutil-linux-amd64 .
+        GOOS=linux GOARCH=arm64 go build -ldflags "-X main.Version=$VERSION -s -w" -o build/gsecutil-linux-arm64 .
+        GOOS=darwin GOARCH=amd64 go build -ldflags "-X main.Version=$VERSION -s -w" -o build/gsecutil-darwin-amd64 .
+        GOOS=darwin GOARCH=arm64 go build -ldflags "-X main.Version=$VERSION -s -w" -o build/gsecutil-darwin-arm64 .
+        GOOS=windows GOARCH=amd64 go build -ldflags "-X main.Version=$VERSION -s -w" -o build/gsecutil-windows-amd64.exe .
+        
+        # Generate checksums
+        cd build
+        for file in *; do
+          sha256sum "$file" > "$file.sha256"
+        done
+        
+        # List built files
+        ls -la
+        
+    - name: Create draft release
+      id: create_draft
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ steps.version.outputs.next_version }}
+        release_name: Release ${{ steps.version.outputs.next_version }}
+        body: |
+          ## ⚠️ Draft Release - Testing Required
+          
+          This is an automated draft release created from the latest main branch. 
+          **This release has not been manually reviewed or tested.**
+          
+          ### Changes Since Last Release
+          
+          ${{ steps.changelog.outputs.changelog }}
+          
+          ### Installation (Draft)
+          
+          **Note:** These are pre-release binaries. Use at your own risk.
+          
+          | Platform | Architecture | Download |
+          |----------|--------------|----------|
+          | Linux | x64 | [gsecutil-linux-amd64](https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.next_version }}/gsecutil-linux-amd64) |
+          | Linux | ARM64 | [gsecutil-linux-arm64](https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.next_version }}/gsecutil-linux-arm64) |
+          | macOS | Intel | [gsecutil-darwin-amd64](https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.next_version }}/gsecutil-darwin-amd64) |
+          | macOS | Apple Silicon | [gsecutil-darwin-arm64](https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.next_version }}/gsecutil-darwin-arm64) |
+          | Windows | x64 | [gsecutil-windows-amd64.exe](https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.next_version }}/gsecutil-windows-amd64.exe) |
+          
+          ### Testing Checklist
+          
+          Before publishing this release, please verify:
+          
+          - [ ] All binaries download and execute correctly
+          - [ ] Basic functionality works (`gsecutil --help`, `gsecutil --version`)
+          - [ ] Core commands work with test secrets
+          - [ ] Cross-platform compatibility verified
+          - [ ] Documentation is up to date
+          - [ ] No security vulnerabilities introduced
+          
+          ### Publishing
+          
+          To publish this release:
+          1. Test the binaries thoroughly
+          2. Update the release notes if needed  
+          3. Uncheck "This is a pre-release" if stable
+          4. Click "Publish release"
+          
+          Or create a proper release by pushing a version tag:
+          ```bash
+          git tag v${{ steps.version.outputs.next_version }}
+          git push origin v${{ steps.version.outputs.next_version }}
+          ```
+        draft: true
+        prerelease: true
+        
+    - name: Upload binaries to draft release
+      run: |
+        UPLOAD_URL="${{ steps.create_draft.outputs.upload_url }}"
+        
+        for file in build/*; do
+          filename=$(basename "$file")
+          echo "Uploading $filename..."
+          
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary @"$file" \
+            "${UPLOAD_URL%\{*}?name=$filename"
+        done
+        
+    - name: Summary
+      run: |
+        echo "## Draft Release Created! 🚀" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Version:** ${{ steps.version.outputs.next_version }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Status:** Draft (requires manual review)" >> $GITHUB_STEP_SUMMARY
+        echo "**Release URL:** https://github.com/${{ github.repository }}/releases/tag/v${{ steps.version.outputs.next_version }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
+        echo "1. Review and test the draft release" >> $GITHUB_STEP_SUMMARY
+        echo "2. Update release notes if needed" >> $GITHUB_STEP_SUMMARY
+        echo "3. Publish the release when ready" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Or Create Official Release" >> $GITHUB_STEP_SUMMARY
+        echo "Push a version tag to trigger the official release workflow:" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+        echo "git tag v${{ steps.version.outputs.next_version }}" >> $GITHUB_STEP_SUMMARY
+        echo "git push origin v${{ steps.version.outputs.next_version }}" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
