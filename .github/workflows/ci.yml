@@ -138,6 +138,9 @@ jobs:
         
     - name: Run Gosec Security Scanner
       run: |
+        # Ensure Go bin directory is in PATH
+        export PATH=$PATH:$(go env GOPATH)/bin
+        
         # Install gosec (correct repository path)
         echo "Installing gosec from github.com/securego/gosec..."
         if go install github.com/securego/gosec/v2/cmd/gosec@latest; then
@@ -183,6 +186,9 @@ jobs:
         
     - name: Run Go vulnerability check
       run: |
+        # Ensure Go bin directory is in PATH
+        export PATH=$PATH:$(go env GOPATH)/bin
+        
         # Install govulncheck
         go install golang.org/x/vuln/cmd/govulncheck@latest
         
