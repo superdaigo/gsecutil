@@ -12,10 +12,10 @@ import (
 
 // AuditLogEntry represents an audit log entry from Google Cloud Logging
 type AuditLogEntry struct {
-	Timestamp    time.Time `json:"timestamp"`
-	Severity     string    `json:"severity"`
-	LogName      string    `json:"logName"`
-	Resource     struct {
+	Timestamp time.Time `json:"timestamp"`
+	Severity  string    `json:"severity"`
+	LogName   string    `json:"logName"`
+	Resource  struct {
 		Type   string `json:"type"`
 		Labels struct {
 			ProjectID string `json:"project_id"`
@@ -60,8 +60,8 @@ AND (
   OR protoPayload.request.name:"%s"
   OR protoPayload.response.name:"%s"
 )
-AND timestamp>="%s"`, 
-			secretName, secretName, secretName, 
+AND timestamp>="%s"`,
+			secretName, secretName, secretName,
 			time.Now().AddDate(0, 0, -days).Format(time.RFC3339))
 
 		// Build gcloud logging command
@@ -119,7 +119,7 @@ AND timestamp>="%s"`,
 			if user == "" {
 				user = "system"
 			}
-			
+
 			// Extract resource name
 			resourceName := entry.ProtoPayload.ResourceName
 			if resourceName == "" {
@@ -128,7 +128,7 @@ AND timestamp>="%s"`,
 			if resourceName == "" {
 				resourceName = entry.ProtoPayload.Response.Name
 			}
-			
+
 			// Shorten resource name for display
 			if len(resourceName) > 30 {
 				parts := strings.Split(resourceName, "/")
