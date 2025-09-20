@@ -171,7 +171,7 @@ func parseOperationsFilter(operationsFilter string) []string {
 	parts := strings.Split(operationsFilter, ",")
 	var operations []string
 	var invalidOps []string
-	
+
 	for _, part := range parts {
 		operation := strings.TrimSpace(strings.ToUpper(part))
 		if operation != "" {
