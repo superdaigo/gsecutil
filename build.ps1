@@ -12,7 +12,13 @@ $ErrorActionPreference = "Stop"
 
 # Constants
 $BinaryName = "gsecutil"
-$Version = if ($env:VERSION) { $env:VERSION } else { "1.0.0" }
+$Version = if ($env:VERSION) { 
+    $env:VERSION 
+} elseif (Test-Path "VERSION") { 
+    Get-Content "VERSION" -Raw | ForEach-Object { $_.Trim() }
+} else { 
+    "1.0.0" 
+}
 $BuildDir = "build"
 
 # Define build targets (OS/ARCH combinations)

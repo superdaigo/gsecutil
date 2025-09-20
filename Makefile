@@ -3,8 +3,8 @@
 # Binary name
 BINARY_NAME=gsecutil
 
-# Version (can be overridden)
-VERSION?=1.0.0
+# Version (read from VERSION file, can be overridden)
+VERSION?=$(shell cat VERSION 2>/dev/null || echo "1.0.0")
 
 # Build directory
 BUILD_DIR=build
@@ -19,35 +19,37 @@ clean:
 	rm -rf $(BUILD_DIR)
 	go clean
 
-# Create build directory
-$(BUILD_DIR):
-	mkdir -p $(BUILD_DIR)
-
 # Build for current platform
-build: $(BUILD_DIR)
+build:
+	mkdir -p $(BUILD_DIR)
 	go build -ldflags "-X main.Version=$(VERSION)" -o $(BUILD_DIR)/$(BINARY_NAME) .
 
 # Build for Linux (amd64)
-build-linux: $(BUILD_DIR)
+build-linux:
+	mkdir -p $(BUILD_DIR)
 	GOOS=linux GOARCH=amd64 go build -ldflags "-X main.Version=$(VERSION)" -o $(BUILD_DIR)/$(BINARY_NAME)-linux-amd64 .
 
 # Build for Linux (arm64)
-build-linux-arm64: $(BUILD_DIR)
+build-linux-arm64:
+	mkdir -p $(BUILD_DIR)
 	GOOS=linux GOARCH=arm64 go build -ldflags "-X main.Version=$(VERSION)" -o $(BUILD_DIR)/$(BINARY_NAME)-linux-arm64 .
 
 # Build for Windows (amd64)
-build-windows: $(BUILD_DIR)
+build-windows:
+	mkdir -p $(BUILD_DIR)
 	GOOS=windows GOARCH=amd64 go build -ldflags "-X main.Version=$(VERSION)" -o $(BUILD_DIR)/$(BINARY_NAME)-windows-amd64.exe .
 
 # Build for macOS (amd64)
-build-darwin: $(BUILD_DIR)
+build-darwin:
+	mkdir -p $(BUILD_DIR)
 	GOOS=darwin GOARCH=amd64 go build -ldflags "-X main.Version=$(VERSION)" -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-amd64 .
 
 # Build for macOS (arm64)
-build-darwin-arm64: $(BUILD_DIR)
+build-darwin-arm64:
+	mkdir -p $(BUILD_DIR)
 	GOOS=darwin GOARCH=arm64 go build -ldflags "-X main.Version=$(VERSION)" -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-arm64 .
 
-# Build for all platforms
+# Build for all platforms  
 build-all: build-linux build-linux-arm64 build-windows build-darwin build-darwin-arm64
 
 # Run tests

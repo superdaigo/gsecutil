@@ -94,8 +94,12 @@ jobs:
       
     - name: Build for all platforms
       run: |
-        # Set version for build
-        VERSION=${GITHUB_SHA:0:7}
+        # Set version for build (use VERSION file or fallback to commit SHA)
+        if [ -f "VERSION" ]; then
+          VERSION=$(cat VERSION)
+        else
+          VERSION=${GITHUB_SHA:0:7}
+        fi
         
         # Build for each platform
         GOOS=linux GOARCH=amd64 go build -ldflags "-X main.Version=$VERSION -s -w" -o build/gsecutil-linux-amd64 .

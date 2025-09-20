@@ -25,12 +25,22 @@ jobs:
       with:
         fetch-depth: 0  # Fetch full history for changelog generation
       
-    - name: Get version from tag
+    - name: Get version from tag and validate with VERSION file
       id: get_version
       run: |
-        VERSION=${GITHUB_REF#refs/tags/v}
-        echo "version=$VERSION" >> $GITHUB_OUTPUT
-        echo "Version: $VERSION"
+        TAG_VERSION=${GITHUB_REF#refs/tags/v}
+        
+        # Check if VERSION file exists and matches tag
+        if [ -f "VERSION" ]; then
+          FILE_VERSION=$(cat VERSION)
+          if [ "$TAG_VERSION" != "$FILE_VERSION" ]; then
+            echo "Warning: Tag version ($TAG_VERSION) differs from VERSION file ($FILE_VERSION)"
+            echo "Using tag version: $TAG_VERSION"
+          fi
+        fi
+        
+        echo "version=$TAG_VERSION" >> $GITHUB_OUTPUT
+        echo "Version: $TAG_VERSION"
         
     - name: Generate changelog
       id: changelog

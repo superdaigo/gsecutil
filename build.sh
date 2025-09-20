@@ -7,7 +7,7 @@
 set -e
 
 BINARY_NAME="gsecutil"
-VERSION=${VERSION:-"1.0.0"}
+VERSION=${VERSION:-$(cat VERSION 2>/dev/null || echo "1.0.0")}
 BUILD_DIR="build"
 
 # Colors for output
