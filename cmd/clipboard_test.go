@@ -212,7 +212,7 @@ func TestSecretInfoJSONParsing(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var secretInfo SecretInfo
 			err := json.Unmarshal([]byte(tt.jsonData), &secretInfo)
-			
+
 			if tt.wantErr {
 				if err == nil {
 					t.Errorf("Expected error but got none")
@@ -327,7 +327,7 @@ func TestSecretVersionInfoJSONParsing(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var versionInfo SecretVersionInfo
 			err := json.Unmarshal([]byte(tt.jsonData), &versionInfo)
-			
+
 			if tt.wantErr {
 				if err == nil {
 					t.Errorf("Expected error but got none")
@@ -386,7 +386,7 @@ func TestGetSecretInput(t *testing.T) {
 			data:     "",
 			dataFile: "",
 			prompt:   "Enter secret: ",
-			expected: "", // Will fail in interactive mode, but we test the logic
+			expected: "",   // Will fail in interactive mode, but we test the logic
 			wantErr:  true, // Will error in test environment due to no terminal
 		},
 		{
@@ -408,7 +408,7 @@ func TestGetSecretInput(t *testing.T) {
 			}
 
 			result, err := getSecretInput(tt.data, tt.dataFile, tt.prompt)
-			
+
 			if tt.wantErr && err == nil {
 				t.Errorf("Expected error but got none")
 				return

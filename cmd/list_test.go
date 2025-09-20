@@ -79,13 +79,13 @@ func TestParseSecretList(t *testing.T) {
 			wantCount: 2,
 		},
 		{
-			name: "Empty list",
+			name:      "Empty list",
 			jsonInput: `[]`,
 			wantErr:   false,
 			wantCount: 0,
 		},
 		{
-			name: "Invalid JSON",
+			name:      "Invalid JSON",
 			jsonInput: `[{"invalid": json}]`,
 			wantErr:   true,
 			wantCount: 0,
@@ -221,13 +221,13 @@ func formatLabelsForDisplay(labels map[string]string) string {
 	if len(labels) == 0 {
 		return ""
 	}
-	
+
 	// Get sorted keys
 	keys := make([]string, 0, len(labels))
 	for key := range labels {
 		keys = append(keys, key)
 	}
-	
+
 	// Sort keys (using simple sort for testing)
 	for i := 0; i < len(keys); i++ {
 		for j := i + 1; j < len(keys); j++ {
@@ -236,23 +236,23 @@ func formatLabelsForDisplay(labels map[string]string) string {
 			}
 		}
 	}
-	
+
 	// Build the display string
 	parts := make([]string, len(keys))
 	for i, key := range keys {
 		parts[i] = key + "=" + labels[key]
 	}
-	
+
 	return strings.Join(parts, ",")
 }
 
 // TestCalculateColumnWidths tests dynamic column width calculation
 func TestCalculateColumnWidths(t *testing.T) {
 	tests := []struct {
-		name     string
-		secrets  []SecretInfo
-		showLabels bool
-		expectedNameWidth int
+		name                string
+		secrets             []SecretInfo
+		showLabels          bool
+		expectedNameWidth   int
 		expectedLabelsWidth int
 	}{
 		{
@@ -261,22 +261,22 @@ func TestCalculateColumnWidths(t *testing.T) {
 				{Name: "projects/test/secrets/short"},
 				{Name: "projects/test/secrets/a"},
 			},
-			showLabels: false,
+			showLabels:        false,
 			expectedNameWidth: 5, // "short" is 5 chars
 		},
 		{
 			name: "Long names with labels",
 			secrets: []SecretInfo{
 				{
-					Name: "projects/test/secrets/very-long-secret-name",
+					Name:   "projects/test/secrets/very-long-secret-name",
 					Labels: map[string]string{"env": "production", "team": "backend"},
 				},
 				{
-					Name: "projects/test/secrets/short",
+					Name:   "projects/test/secrets/short",
 					Labels: map[string]string{"env": "dev"},
 				},
 			},
-			showLabels: true,
+			showLabels:        true,
 			expectedNameWidth: 21, // "very-long-secret-name" is 21 chars
 		},
 	}
@@ -284,16 +284,16 @@ func TestCalculateColumnWidths(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			nameWidth, labelsWidth := calculateColumnWidths(tt.secrets, tt.showLabels)
-			
+
 			// Check that we calculated reasonable widths
 			if nameWidth < tt.expectedNameWidth {
 				t.Errorf("Expected name width >= %d, got %d", tt.expectedNameWidth, nameWidth)
 			}
-			
+
 			if tt.showLabels && labelsWidth == 0 && hasLabels(tt.secrets) {
 				t.Error("Expected labels width > 0 when showing labels and secrets have labels")
 			}
-			
+
 			if !tt.showLabels && labelsWidth != 0 {
 				t.Error("Expected labels width = 0 when not showing labels")
 			}
@@ -305,7 +305,7 @@ func TestCalculateColumnWidths(t *testing.T) {
 func calculateColumnWidths(secrets []SecretInfo, showLabels bool) (nameWidth, labelsWidth int) {
 	nameWidth = 10 // minimum width
 	labelsWidth = 0
-	
+
 	for _, secret := range secrets {
 		// Extract secret name from full path
 		parts := strings.Split(secret.Name, "/")
@@ -313,11 +313,11 @@ func calculateColumnWidths(secrets []SecretInfo, showLabels bool) (nameWidth, la
 		if len(parts) >= 4 && parts[2] == "secrets" {
 			secretName = parts[3]
 		}
-		
+
 		if len(secretName) > nameWidth {
 			nameWidth = len(secretName)
 		}
-		
+
 		if showLabels {
 			labelStr := formatLabelsForDisplay(secret.Labels)
 			if len(labelStr) > labelsWidth {
@@ -325,7 +325,7 @@ func calculateColumnWidths(secrets []SecretInfo, showLabels bool) (nameWidth, la
 			}
 		}
 	}
-	
+
 	return nameWidth, labelsWidth
 }
 
@@ -341,7 +341,7 @@ func hasLabels(secrets []SecretInfo) bool {
 // TestSecretCreationTimeFormatting tests time formatting for display
 func TestSecretCreationTimeFormatting(t *testing.T) {
 	testTime := time.Date(2023, 6, 15, 14, 30, 45, 0, time.UTC)
-	
+
 	tests := []struct {
 		name     string
 		format   string
@@ -393,7 +393,7 @@ func TestSecretInfoSorting(t *testing.T) {
 
 	expectedOrder := []string{
 		"projects/test/secrets/apple",
-		"projects/test/secrets/banana", 
+		"projects/test/secrets/banana",
 		"projects/test/secrets/zebra",
 	}
 

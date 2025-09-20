@@ -462,11 +462,11 @@ func TestFilterLogEntries(t *testing.T) {
 // TestBuildLogFilter tests log filter construction
 func TestBuildLogFilter(t *testing.T) {
 	tests := []struct {
-		name       string
-		secretName string
-		userFilter string
-		days       int
-		contains   []string
+		name        string
+		secretName  string
+		userFilter  string
+		days        int
+		contains    []string
 		notContains []string
 	}{
 		{
