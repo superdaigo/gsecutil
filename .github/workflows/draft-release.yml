@@ -9,6 +9,12 @@ on:
       - 'docs/**'
   workflow_dispatch:  # Allow manual trigger
 
+permissions:
+  contents: write
+  packages: write
+  issues: read
+  pull-requests: read
+
 jobs:
   draft-release:
     name: Create Draft Release
@@ -134,75 +140,75 @@ jobs:
         
     - name: Create draft release
       id: create_draft
-      uses: actions/create-release@v1
+      run: |
+        VERSION=${{ steps.version.outputs.next_version }}
+        
+        # Create release body
+        cat > release_body.md << 'EOF'
+        ## ⚠️ Draft Release - Testing Required
+        
+        This is an automated draft release created from the latest main branch. 
+        **This release has not been manually reviewed or tested.**
+        
+        ### Changes Since Last Release
+        
+        ${{ steps.changelog.outputs.changelog }}
+        
+        ### Installation (Draft)
+        
+        **Note:** These are pre-release binaries. Use at your own risk.
+        
+        | Platform | Architecture | Download |
+        |----------|--------------|----------|
+        | Linux | x64 | [gsecutil-linux-amd64](https://github.com/${{ github.repository }}/releases/download/v$VERSION/gsecutil-linux-amd64) |
+        | Linux | ARM64 | [gsecutil-linux-arm64](https://github.com/${{ github.repository }}/releases/download/v$VERSION/gsecutil-linux-arm64) |
+        | macOS | Intel | [gsecutil-darwin-amd64](https://github.com/${{ github.repository }}/releases/download/v$VERSION/gsecutil-darwin-amd64) |
+        | macOS | Apple Silicon | [gsecutil-darwin-arm64](https://github.com/${{ github.repository }}/releases/download/v$VERSION/gsecutil-darwin-arm64) |
+        | Windows | x64 | [gsecutil-windows-amd64.exe](https://github.com/${{ github.repository }}/releases/download/v$VERSION/gsecutil-windows-amd64.exe) |
+        
+        ### Testing Checklist
+        
+        Before publishing this release, please verify:
+        
+        - [ ] All binaries download and execute correctly
+        - [ ] Basic functionality works (`gsecutil --help`, `gsecutil --version`)
+        - [ ] Core commands work with test secrets
+        - [ ] Cross-platform compatibility verified
+        - [ ] Documentation is up to date
+        - [ ] No security vulnerabilities introduced
+        
+        ### Publishing
+        
+        To publish this release:
+        1. Test the binaries thoroughly
+        2. Update the release notes if needed  
+        3. Uncheck "This is a pre-release" if stable
+        4. Click "Publish release"
+        
+        Or create a proper release by pushing a version tag:
+        ```bash
+        git tag v$VERSION
+        git push origin v$VERSION
+        ```
+        EOF
+        
+        # Create draft release using GitHub CLI
+        gh release create "v$VERSION" \
+          --title "Release $VERSION" \
+          --notes-file release_body.md \
+          --draft \
+          --prerelease
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: v${{ steps.version.outputs.next_version }}
-        release_name: Release ${{ steps.version.outputs.next_version }}
-        body: |
-          ## ⚠️ Draft Release - Testing Required
-          
-          This is an automated draft release created from the latest main branch. 
-          **This release has not been manually reviewed or tested.**
-          
-          ### Changes Since Last Release
-          
-          ${{ steps.changelog.outputs.changelog }}
-          
-          ### Installation (Draft)
-          
-          **Note:** These are pre-release binaries. Use at your own risk.
-          
-          | Platform | Architecture | Download |
-          |----------|--------------|----------|
-          | Linux | x64 | [gsecutil-linux-amd64](https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.next_version }}/gsecutil-linux-amd64) |
-          | Linux | ARM64 | [gsecutil-linux-arm64](https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.next_version }}/gsecutil-linux-arm64) |
-          | macOS | Intel | [gsecutil-darwin-amd64](https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.next_version }}/gsecutil-darwin-amd64) |
-          | macOS | Apple Silicon | [gsecutil-darwin-arm64](https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.next_version }}/gsecutil-darwin-arm64) |
-          | Windows | x64 | [gsecutil-windows-amd64.exe](https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.next_version }}/gsecutil-windows-amd64.exe) |
-          
-          ### Testing Checklist
-          
-          Before publishing this release, please verify:
-          
-          - [ ] All binaries download and execute correctly
-          - [ ] Basic functionality works (`gsecutil --help`, `gsecutil --version`)
-          - [ ] Core commands work with test secrets
-          - [ ] Cross-platform compatibility verified
-          - [ ] Documentation is up to date
-          - [ ] No security vulnerabilities introduced
-          
-          ### Publishing
-          
-          To publish this release:
-          1. Test the binaries thoroughly
-          2. Update the release notes if needed  
-          3. Uncheck "This is a pre-release" if stable
-          4. Click "Publish release"
-          
-          Or create a proper release by pushing a version tag:
-          ```bash
-          git tag v${{ steps.version.outputs.next_version }}
-          git push origin v${{ steps.version.outputs.next_version }}
-          ```
-        draft: true
-        prerelease: true
         
     - name: Upload binaries to draft release
       run: |
-        UPLOAD_URL="${{ steps.create_draft.outputs.upload_url }}"
+        VERSION=${{ steps.version.outputs.next_version }}
         
-        for file in build/*; do
-          filename=$(basename "$file")
-          echo "Uploading $filename..."
-          
-          curl -X POST \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Content-Type: application/octet-stream" \
-            --data-binary @"$file" \
-            "${UPLOAD_URL%\{*}?name=$filename"
-        done
+        # Upload all files in build directory using GitHub CLI
+        gh release upload "v$VERSION" build/*
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         
     - name: Summary
       run: |

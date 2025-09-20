@@ -5,6 +5,12 @@ on:
     tags:
       - 'v*'  # Triggers on version tags like v1.0.0, v1.2.3, etc.
 
+permissions:
+  contents: write
+  packages: write
+  issues: read
+  pull-requests: read
+
 jobs:
   create-release:
     name: Create Release
@@ -49,56 +55,64 @@ jobs:
         
     - name: Create Release
       id: create_release
-      uses: actions/create-release@v1
+      run: |
+        # Create release body
+        cat > release_body.md << 'EOF'
+        ## Changes in this Release
+        
+        ${{ steps.changelog.outputs.changelog }}
+        
+        ## Installation
+        
+        ### Download Pre-built Binaries
+        
+        Choose the appropriate binary for your platform:
+        
+        | Platform | Architecture | Download |
+        |----------|--------------|----------|
+        | Linux | x64 | [gsecutil-linux-amd64](https://github.com/${{ github.repository }}/releases/download/v${{ steps.get_version.outputs.version }}/gsecutil-linux-amd64) |
+        | Linux | ARM64 | [gsecutil-linux-arm64](https://github.com/${{ github.repository }}/releases/download/v${{ steps.get_version.outputs.version }}/gsecutil-linux-arm64) |
+        | macOS | Intel | [gsecutil-darwin-amd64](https://github.com/${{ github.repository }}/releases/download/v${{ steps.get_version.outputs.version }}/gsecutil-darwin-amd64) |
+        | macOS | Apple Silicon | [gsecutil-darwin-arm64](https://github.com/${{ github.repository }}/releases/download/v${{ steps.get_version.outputs.version }}/gsecutil-darwin-arm64) |
+        | Windows | x64 | [gsecutil-windows-amd64.exe](https://github.com/${{ github.repository }}/releases/download/v${{ steps.get_version.outputs.version }}/gsecutil-windows-amd64.exe) |
+        
+        ### Install with Go
+        
+        ```bash
+        go install github.com/${{ github.repository }}@v${{ steps.get_version.outputs.version }}
+        ```
+        
+        ### Verify Installation
+        
+        ```bash
+        ./gsecutil-linux-amd64 --version  # Linux example
+        gsecutil --version                # If installed with Go
+        ```
+        
+        ## Requirements
+        
+        - Google Cloud SDK (`gcloud`) installed and authenticated
+        - Secret Manager API enabled in your Google Cloud project
+        - Appropriate IAM permissions for Secret Manager operations
+        
+        ## Documentation
+        
+        - [README.md](https://github.com/${{ github.repository }}/blob/v${{ steps.get_version.outputs.version }}/README.md) - Usage and examples
+        - [BUILD.md](https://github.com/${{ github.repository }}/blob/v${{ steps.get_version.outputs.version }}/BUILD.md) - Build from source instructions
+        EOF
+        
+        # Create release using GitHub CLI
+        PRE_RELEASE_FLAG=""
+        if [[ "${{ github.ref }}" == *"alpha"* || "${{ github.ref }}" == *"beta"* || "${{ github.ref }}" == *"rc"* ]]; then
+          PRE_RELEASE_FLAG="--prerelease"
+        fi
+        
+        gh release create "${{ github.ref_name }}" \
+          --title "Release ${{ steps.get_version.outputs.version }}" \
+          --notes-file release_body.md \
+          $PRE_RELEASE_FLAG
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ steps.get_version.outputs.version }}
-        body: |
-          ## Changes in this Release
-          
-          ${{ steps.changelog.outputs.changelog }}
-          
-          ## Installation
-          
-          ### Download Pre-built Binaries
-          
-          Choose the appropriate binary for your platform:
-          
-          | Platform | Architecture | Download |
-          |----------|--------------|----------|
-          | Linux | x64 | [gsecutil-linux-amd64](https://github.com/${{ github.repository }}/releases/download/v${{ steps.get_version.outputs.version }}/gsecutil-linux-amd64) |
-          | Linux | ARM64 | [gsecutil-linux-arm64](https://github.com/${{ github.repository }}/releases/download/v${{ steps.get_version.outputs.version }}/gsecutil-linux-arm64) |
-          | macOS | Intel | [gsecutil-darwin-amd64](https://github.com/${{ github.repository }}/releases/download/v${{ steps.get_version.outputs.version }}/gsecutil-darwin-amd64) |
-          | macOS | Apple Silicon | [gsecutil-darwin-arm64](https://github.com/${{ github.repository }}/releases/download/v${{ steps.get_version.outputs.version }}/gsecutil-darwin-arm64) |
-          | Windows | x64 | [gsecutil-windows-amd64.exe](https://github.com/${{ github.repository }}/releases/download/v${{ steps.get_version.outputs.version }}/gsecutil-windows-amd64.exe) |
-          
-          ### Install with Go
-          
-          ```bash
-          go install github.com/${{ github.repository }}@v${{ steps.get_version.outputs.version }}
-          ```
-          
-          ### Verify Installation
-          
-          ```bash
-          ./gsecutil-linux-amd64 --version  # Linux example
-          gsecutil --version                # If installed with Go
-          ```
-          
-          ## Requirements
-          
-          - Google Cloud SDK (`gcloud`) installed and authenticated
-          - Secret Manager API enabled in your Google Cloud project
-          - Appropriate IAM permissions for Secret Manager operations
-          
-          ## Documentation
-          
-          - [README.md](https://github.com/${{ github.repository }}/blob/v${{ steps.get_version.outputs.version }}/README.md) - Usage and examples
-          - [BUILD.md](https://github.com/${{ github.repository }}/blob/v${{ steps.get_version.outputs.version }}/BUILD.md) - Build from source instructions
-        draft: false
-        prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') || contains(github.ref, 'rc') }}
 
   build-and-upload:
     name: Build and Upload Assets
@@ -166,25 +180,14 @@ jobs:
         # Show checksum
         cat ${{ matrix.asset_name }}.sha256
         
-    - name: Upload Release Asset
-      uses: actions/upload-release-asset@v1
+    - name: Upload Release Assets
+      run: |
+        # Upload binary and checksum using GitHub CLI
+        gh release upload "v${{ needs.create-release.outputs.version }}" \
+          "${{ matrix.asset_name }}" \
+          "${{ matrix.asset_name }}.sha256"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: ./${{ matrix.asset_name }}
-        asset_name: ${{ matrix.asset_name }}
-        asset_content_type: application/octet-stream
-        
-    - name: Upload Checksum
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: ./${{ matrix.asset_name }}.sha256
-        asset_name: ${{ matrix.asset_name }}.sha256
-        asset_content_type: text/plain
 
   create-checksums:
     name: Create Combined Checksums
@@ -192,51 +195,38 @@ jobs:
     needs: [create-release, build-and-upload]
     
     steps:
-    - name: Download all artifacts
+    - name: Create and upload combined checksums
       run: |
-        # Download all release assets to get checksums
         VERSION=${{ needs.create-release.outputs.version }}
         
         # Create checksums file header
-        echo "# SHA256 Checksums for gsecutil v$VERSION" > checksums.txt
-        echo "# Generated on $(date -u)" >> checksums.txt
-        echo "" >> checksums.txt
+        cat > checksums.txt << EOF
+        # SHA256 Checksums for gsecutil v$VERSION
+        # Generated on $(date -u)
         
-        # Download individual checksum files and combine them
-        for asset in gsecutil-linux-amd64 gsecutil-linux-arm64 gsecutil-darwin-amd64 gsecutil-darwin-arm64 gsecutil-windows-amd64.exe; do
-          # Use curl to download the checksum file
-          if curl -L -f -s "https://github.com/${{ github.repository }}/releases/download/v$VERSION/${asset}.sha256" >> checksums.txt; then
-            echo "Downloaded checksum for $asset"
-          else
-            echo "Failed to download checksum for $asset"
-          fi
-        done
+        # Download individual checksums (they're already uploaded as separate files)
+        # Combined here for convenience
         
-        echo "" >> checksums.txt
-        echo "## Verification" >> checksums.txt
-        echo "" >> checksums.txt
-        echo "To verify the integrity of downloaded binaries:" >> checksums.txt
-        echo "" >> checksums.txt
-        echo "\`\`\`bash" >> checksums.txt
-        echo "# Download the binary and checksum file" >> checksums.txt
-        echo "curl -LO https://github.com/${{ github.repository }}/releases/download/v$VERSION/gsecutil-linux-amd64" >> checksums.txt
-        echo "curl -LO https://github.com/${{ github.repository }}/releases/download/v$VERSION/gsecutil-linux-amd64.sha256" >> checksums.txt
-        echo "" >> checksums.txt
-        echo "# Verify checksum" >> checksums.txt
-        echo "sha256sum -c gsecutil-linux-amd64.sha256" >> checksums.txt
-        echo "\`\`\`" >> checksums.txt
+        ## Verification
         
-        cat checksums.txt
+        To verify the integrity of downloaded binaries:
         
-    - name: Upload Combined Checksums
-      uses: actions/upload-release-asset@v1
+        \`\`\`bash
+        # Download the binary and checksum file
+        curl -LO https://github.com/${{ github.repository }}/releases/download/v$VERSION/gsecutil-linux-amd64
+        curl -LO https://github.com/${{ github.repository }}/releases/download/v$VERSION/gsecutil-linux-amd64.sha256
+        
+        # Verify checksum
+        sha256sum -c gsecutil-linux-amd64.sha256
+        \`\`\`
+        
+        Note: Individual .sha256 files are available for each binary in this release.
+        EOF
+        
+        # Upload the combined checksums file
+        gh release upload "v$VERSION" checksums.txt
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: ./checksums.txt
-        asset_name: checksums.txt
-        asset_content_type: text/plain
 
   notify:
     name: Notify Release
