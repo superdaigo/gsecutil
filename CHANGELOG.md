@@ -5,6 +5,81 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2025-09-20
+
+### 🧪 Testing & Quality Assurance
+
+#### Comprehensive Test Suite
+- **Added 67+ test cases** covering core business logic and edge cases
+- **Test coverage: 21.4%** focused on high-value code paths including:
+  - Data parsing and validation logic (JSON unmarshaling, operations filtering)
+  - Business rules and filtering algorithms (audit log filtering, secret list processing)
+  - Helper functions (version extraction, label formatting, column width calculation)
+  - Command structure and flag handling (root command functionality)
+- **Four test files created**:
+  - `cmd/auditlog_test.go` - Tests for audit log operations, filtering, and validation
+  - `cmd/clipboard_test.go` - Tests for clipboard utilities, JSON parsing, and helper functions
+  - `cmd/list_test.go` - Tests for secret list parsing, formatting, and display logic
+  - `cmd/root_test.go` - Tests for root command functionality and flag handling
+
+#### Development Quality Tools
+- **Pre-commit hooks** configured with `.pre-commit-config.yaml`:
+  - **File quality checks**: Remove trailing whitespace, fix line endings, check YAML/JSON syntax
+  - **Go-specific checks**: `go fmt`, `go vet`, `go mod tidy`, `go test ./cmd`
+  - **Advanced linting**: `golangci-lint` with staticcheck analysis
+- **Automatic quality enforcement** on every commit
+- **CI/CD compatibility** - hooks match GitHub Actions workflow requirements
+
+### 🔧 Code Quality Improvements
+
+#### Static Analysis Fixes
+- **Fixed SA5011 staticcheck errors**: Resolved nil pointer dereference issues in test files
+- **Enhanced error handling**: Added proper early returns after nil checks
+- **Golangci-lint integration**: Now runs clean with `0 issues`
+- **Go 1.24 compatibility**: Upgraded golangci-lint to latest version (2.4.0)
+
+#### Documentation Enhancements
+- **Updated README.md** with pre-commit setup instructions
+- **Enhanced Contributing section** with detailed development workflow
+- **Automated quality checks documentation** for contributors
+- **Clear setup instructions** for development environment
+
+### 🚀 Developer Experience
+
+#### Automated Code Quality
+- **Consistent formatting**: Automatic `go fmt` on every commit
+- **Dependency management**: Automatic `go mod tidy`
+- **Test execution**: Automatic test run before commits
+- **Early problem detection**: Issues caught before code review
+
+#### Improved Maintainability
+- **Comprehensive test coverage** of critical business logic
+- **Consistent code style** enforced automatically
+- **Reduced manual testing** burden through automated tests
+- **Better code documentation** through test examples
+
+### 📋 Technical Details
+
+#### Test Framework
+- **Table-driven tests** for comprehensive scenario coverage
+- **Helper functions** to reduce code duplication and improve readability
+- **Proper test isolation** preventing test interdependencies
+- **Edge case coverage** including error conditions and boundary values
+
+#### Pre-commit Configuration
+- **Multi-stage validation**: File checks → Go checks → Tests → Linting
+- **Fast execution**: Only runs on changed files
+- **Auto-fixing**: Some issues (like formatting) are fixed automatically
+- **Blocking commits**: Prevents commits with quality issues
+
+### 🎯 Impact
+
+- **Improved code reliability** through comprehensive testing
+- **Faster development cycles** with automated quality checks
+- **Easier contributions** with clear development standards
+- **Reduced bug risk** through static analysis and testing
+- **Better maintainability** with consistent code quality
+
 ## [0.2.0] - 2025-09-20
 
 ### 🚀 Major Features Added
