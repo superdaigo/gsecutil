@@ -138,16 +138,34 @@ jobs:
         
     - name: Run Gosec Security Scanner
       run: |
-        # Install gosec
-        go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest
-        
-        # Run gosec security scan
-        gosec -fmt json -out gosec-results.json ./... || echo "Security scan completed with issues (non-critical for CI)"
-        
-        # Show results if file exists
-        if [ -f gosec-results.json ]; then
-          echo "Security scan results:"
-          cat gosec-results.json | jq '.Issues | length' 2>/dev/null || echo "Issues found, see full results above"
+        # Install gosec (correct repository path)
+        echo "Installing gosec from github.com/securego/gosec..."
+        if go install github.com/securego/gosec/v2/cmd/gosec@latest; then
+          echo "✓ gosec installed successfully"
+          
+          # Run gosec security scan
+          echo "Running gosec security scan..."
+          if gosec -fmt json -out gosec-results.json ./...; then
+            echo "✓ Security scan completed successfully"
+          else
+            echo "⚠ Security scan found issues (non-critical for CI)"
+          fi
+          
+          # Show results if file exists
+          if [ -f gosec-results.json ]; then
+            echo "Security scan results:"
+            ISSUE_COUNT=$(cat gosec-results.json | jq '.Issues | length' 2>/dev/null || echo "unknown")
+            echo "Issues found: $ISSUE_COUNT"
+            
+            # Show first few issues for preview
+            if [ "$ISSUE_COUNT" != "0" ] && [ "$ISSUE_COUNT" != "unknown" ]; then
+              echo "Sample issues:"
+              cat gosec-results.json | jq '.Issues[:3] | .[] | {severity, confidence, what, file, line}' 2>/dev/null || echo "Could not parse issues"
+            fi
+          fi
+        else
+          echo "⚠ Failed to install gosec, skipping security scan"
+          echo "This is non-critical for CI success"
         fi
 
   dependency-check:

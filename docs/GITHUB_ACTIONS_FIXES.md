@@ -30,8 +30,9 @@ Error: Unable to resolve action securecodewarrior/github-action-gosec, repositor
 
 **Fix:**
 - Replaced `securecodewarrior/github-action-gosec@master` with direct gosec installation
-- Now installs gosec directly: `go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest`
+- Now installs gosec directly: `go install github.com/securego/gosec/v2/cmd/gosec@latest`
 - Added proper error handling and JSON output formatting
+- **Note**: gosec repository moved from `securecodewarrior/gosec` to `securego/gosec`
 
 **Benefits:**
 - More reliable (no dependency on external GitHub Action repository)
