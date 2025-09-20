@@ -170,11 +170,23 @@ func parseOperationsFilter(operationsFilter string) []string {
 	// Split by comma and trim whitespace
 	parts := strings.Split(operationsFilter, ",")
 	var operations []string
+	var invalidOps []string
+	
 	for _, part := range parts {
 		operation := strings.TrimSpace(strings.ToUpper(part))
 		if operation != "" {
-			operations = append(operations, operation)
+			if isValidOperation(operation) {
+				operations = append(operations, operation)
+			} else {
+				invalidOps = append(invalidOps, part) // Keep original case for error message
+			}
 		}
+	}
+
+	// Warn about invalid operations but continue with valid ones
+	if len(invalidOps) > 0 {
+		fmt.Printf("Warning: Invalid operation(s) ignored: %s\n", strings.Join(invalidOps, ", "))
+		fmt.Printf("Valid operations are: ACCESS, CREATE, UPDATE, DELETE, GET_METADATA, LIST, UPDATE_METADATA, DESTROY_VERSION, DISABLE_VERSION, ENABLE_VERSION\n")
 	}
 
 	return operations
