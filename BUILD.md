@@ -27,7 +27,7 @@ This document provides comprehensive instructions for building `gsecutil` from s
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/gsecutil.git
+git clone https://github.com/superdaigo/gsecutil.git
 cd gsecutil
 
 # Build for current platform

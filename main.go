@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/daigo/gsecutil/cmd"
+	"github.com/superdaigo/gsecutil/cmd"
 )
 
 // Version is set via ldflags during build

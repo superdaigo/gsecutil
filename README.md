@@ -26,7 +26,7 @@ A command-line utility that provides a simple wrapper around the `gcloud` CLI fo
 
 ### Pre-built Binaries
 
-Download the latest release for your platform from the [releases page](https://github.com/yourusername/gsecutil/releases):
+Download the latest release for your platform from the [releases page](https://github.com/superdaigo/gsecutil/releases):
 
 | Platform | Architecture | Download |
 |----------|--------------|----------|
@@ -39,7 +39,7 @@ Download the latest release for your platform from the [releases page](https://g
 ### Install with Go
 
 ```bash
-go install github.com/yourusername/gsecutil@latest
+go install github.com/superdaigo/gsecutil@latest
 ```
 
 ### Build from Source
@@ -48,7 +48,7 @@ For comprehensive build instructions, see [BUILD.md](BUILD.md).
 
 **Quick build:**
 ```bash
-git clone https://github.com/yourusername/gsecutil.git
+git clone https://github.com/superdaigo/gsecutil.git
 cd gsecutil
 
 # Build for current platform
@@ -414,7 +414,7 @@ For comprehensive build instructions including cross-platform builds, CI/CD inte
 
 ```bash
 # Clone and build
-git clone https://github.com/yourusername/gsecutil.git
+git clone https://github.com/superdaigo/gsecutil.git
 cd gsecutil
 
 # Install dependencies and build

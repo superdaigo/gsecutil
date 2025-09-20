@@ -1,4 +1,4 @@
-module github.com/daigo/gsecutil
+module github.com/superdaigo/gsecutil
 
 go 1.24.6
 
