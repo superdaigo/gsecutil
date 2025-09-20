@@ -68,6 +68,7 @@ func TestRootCommandFlags(t *testing.T) {
 	projectFlag := rootCmd.PersistentFlags().Lookup("project")
 	if projectFlag == nil {
 		t.Error("Expected --project flag to exist")
+		return
 	}
 
 	if projectFlag.Shorthand != "p" {
@@ -132,6 +133,7 @@ func TestCommandStructure(t *testing.T) {
 	projectFlag := rootCmd.PersistentFlags().Lookup("project")
 	if projectFlag == nil {
 		t.Error("Expected --project flag to be defined in root command")
+		return
 	}
 
 	// Just test that there are some commands (exact count depends on init order)

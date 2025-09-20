@@ -21,3 +21,4 @@ repos:
       - id: go-vet
       - id: go-mod-tidy
       - id: go-unit-tests
+      - id: golangci-lint
