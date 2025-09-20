@@ -190,3 +190,4 @@ You can manually trigger workflows from the GitHub Actions UI:
 - **GitHub Actions:** https://github.com/superdaigo/gsecutil/actions
 - **Releases:** https://github.com/superdaigo/gsecutil/releases
 - **Repository:** https://github.com/superdaigo/gsecutil
+# Testing pre-commit hooks
