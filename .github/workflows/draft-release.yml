@@ -196,6 +196,7 @@ jobs:
         gh release create "v$VERSION" \
           --title "Release $VERSION" \
           --notes-file release_body.md \
+          --repo ${{ github.repository }} \
           --draft \
           --prerelease
       env:
@@ -206,7 +207,7 @@ jobs:
         VERSION=${{ steps.version.outputs.next_version }}
         
         # Upload all files in build directory using GitHub CLI
-        gh release upload "v$VERSION" build/*
+        gh release upload "v$VERSION" build/* --repo ${{ github.repository }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         
