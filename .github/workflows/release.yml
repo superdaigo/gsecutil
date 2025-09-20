@@ -49,62 +49,75 @@ jobs:
         PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
         
         if [ -z "$PREV_TAG" ]; then
-          # If no previous tag, get all commits
-          CHANGELOG=$(git log --pretty=format:"- %s (%h)" --reverse)
+          # If no previous tag, get recent commits (limit to avoid too much output)
+          CHANGELOG=$(git log --pretty=format:"- %s (%h)" --reverse -10)
         else
           # Get commits since the previous tag
           CHANGELOG=$(git log $PREV_TAG..HEAD --pretty=format:"- %s (%h)" --reverse)
         fi
-                
-        echo "changelog=$CHANGELOG" >> $GITHUB_OUTPUT
+        
+        # Write changelog to file to avoid GitHub Actions output format issues
+        echo "$CHANGELOG" > changelog.txt
+        
+        # Set a simple flag that changelog exists
+        echo "changelog_ready=true" >> $GITHUB_OUTPUT
         
     - name: Create Release
       id: create_release
       run: |
-        # Create release body
-        cat > release_body.md << 'EOF'
-        ## Changes in this Release
+        # Create release body with changelog from file
+        {
+          echo "## Changes in this Release"
+          echo ""
+          if [ -f "changelog.txt" ]; then
+            cat changelog.txt
+          else
+            echo "- Release created from tag ${{ steps.get_version.outputs.version }}"
+          fi
+          echo ""
+          echo "## Installation"
+          echo ""
+          echo "### Download Pre-built Binaries"
+          echo ""
+          echo "Choose the appropriate binary for your platform:"
+          echo ""
+          echo "| Platform | Architecture | Download |"
+          echo "|----------|--------------|----------|"
+          echo "| Linux | x64 | [gsecutil-linux-amd64](https://github.com/${{ github.repository }}/releases/download/v${{ steps.get_version.outputs.version }}/gsecutil-linux-amd64) |"
+          echo "| Linux | ARM64 | [gsecutil-linux-arm64](https://github.com/${{ github.repository }}/releases/download/v${{ steps.get_version.outputs.version }}/gsecutil-linux-arm64) |"
+          echo "| macOS | Intel | [gsecutil-darwin-amd64](https://github.com/${{ github.repository }}/releases/download/v${{ steps.get_version.outputs.version }}/gsecutil-darwin-amd64) |"
+          echo "| macOS | Apple Silicon | [gsecutil-darwin-arm64](https://github.com/${{ github.repository }}/releases/download/v${{ steps.get_version.outputs.version }}/gsecutil-darwin-arm64) |"
+          echo "| Windows | x64 | [gsecutil-windows-amd64.exe](https://github.com/${{ github.repository }}/releases/download/v${{ steps.get_version.outputs.version }}/gsecutil-windows-amd64.exe) |"
+          echo ""
+          echo "### Install with Go"
+          echo ""
+          echo "\`\`\`bash"
+          echo "go install github.com/${{ github.repository }}@v${{ steps.get_version.outputs.version }}"
+          echo "\`\`\`"
+          echo ""
+          echo "### Verify Installation"
+          echo ""
+          echo "\`\`\`bash"
+          echo "./gsecutil-linux-amd64 --version  # Linux example"
+          echo "gsecutil --version                # If installed with Go"
+          echo "\`\`\`"
+          echo ""
+          echo "## Requirements"
+          echo ""
+          echo "- Google Cloud SDK (\`gcloud\`) installed and authenticated"
+          echo "- Secret Manager API enabled in your Google Cloud project"
+          echo "- Appropriate IAM permissions for Secret Manager operations"
+          echo ""
+          echo "## Documentation"
+          echo ""
+          echo "- [README.md](https://github.com/${{ github.repository }}/blob/v${{ steps.get_version.outputs.version }}/README.md) - Usage and examples"
+          echo "- [BUILD.md](https://github.com/${{ github.repository }}/blob/v${{ steps.get_version.outputs.version }}/BUILD.md) - Build from source instructions"
+        } > release_body.md
         
-        ${{ steps.changelog.outputs.changelog }}
-        
-        ## Installation
-        
-        ### Download Pre-built Binaries
-        
-        Choose the appropriate binary for your platform:
-        
-        | Platform | Architecture | Download |
-        |----------|--------------|----------|
-        | Linux | x64 | [gsecutil-linux-amd64](https://github.com/${{ github.repository }}/releases/download/v${{ steps.get_version.outputs.version }}/gsecutil-linux-amd64) |
-        | Linux | ARM64 | [gsecutil-linux-arm64](https://github.com/${{ github.repository }}/releases/download/v${{ steps.get_version.outputs.version }}/gsecutil-linux-arm64) |
-        | macOS | Intel | [gsecutil-darwin-amd64](https://github.com/${{ github.repository }}/releases/download/v${{ steps.get_version.outputs.version }}/gsecutil-darwin-amd64) |
-        | macOS | Apple Silicon | [gsecutil-darwin-arm64](https://github.com/${{ github.repository }}/releases/download/v${{ steps.get_version.outputs.version }}/gsecutil-darwin-arm64) |
-        | Windows | x64 | [gsecutil-windows-amd64.exe](https://github.com/${{ github.repository }}/releases/download/v${{ steps.get_version.outputs.version }}/gsecutil-windows-amd64.exe) |
-        
-        ### Install with Go
-        
-        ```bash
-        go install github.com/${{ github.repository }}@v${{ steps.get_version.outputs.version }}
-        ```
-        
-        ### Verify Installation
-        
-        ```bash
-        ./gsecutil-linux-amd64 --version  # Linux example
-        gsecutil --version                # If installed with Go
-        ```
-        
-        ## Requirements
-        
-        - Google Cloud SDK (`gcloud`) installed and authenticated
-        - Secret Manager API enabled in your Google Cloud project
-        - Appropriate IAM permissions for Secret Manager operations
-        
-        ## Documentation
-        
-        - [README.md](https://github.com/${{ github.repository }}/blob/v${{ steps.get_version.outputs.version }}/README.md) - Usage and examples
-        - [BUILD.md](https://github.com/${{ github.repository }}/blob/v${{ steps.get_version.outputs.version }}/BUILD.md) - Build from source instructions
-        EOF
+        # Show the release body for debugging
+        echo "=== Release Body ==="
+        cat release_body.md
+        echo "=== End Release Body ==="
         
         # Create release using GitHub CLI
         PRE_RELEASE_FLAG=""
