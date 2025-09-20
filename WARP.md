@@ -50,7 +50,7 @@ The application uses the [Cobra CLI framework](https://github.com/spf13/cobra) w
 - **`create`** - Creates new secrets with support for interactive input, inline data, or file input
 - **`update`** - Updates existing secrets by creating new versions
 - **`delete`** - Deletes secrets with confirmation prompts
-- **`list`** - Lists secrets with filtering and formatting options  
+- **`list`** - Lists secrets with filtering and formatting options
 - **`describe`** - Shows detailed secret metadata with optional version history
 - **`auditlog`** - Shows audit log entries for secret access, including who accessed secrets, when, and what operations were performed
 

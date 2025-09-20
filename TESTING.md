@@ -156,7 +156,7 @@ You can manually trigger workflows from the GitHub Actions UI:
 
 ```markdown
 ## CI Workflow Test Results
-- [ ] Test job completed successfully  
+- [ ] Test job completed successfully
 - [ ] Lint job completed successfully
 - [ ] Build job completed successfully
 - [ ] Security scan completed successfully
@@ -170,7 +170,7 @@ You can manually trigger workflows from the GitHub Actions UI:
 - [ ] Release notes generated
 - [ ] Testing checklist included
 
-## Release Workflow Test Results  
+## Release Workflow Test Results
 - [ ] Release created on tag push
 - [ ] All binaries uploaded correctly
 - [ ] Checksums match

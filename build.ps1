@@ -12,12 +12,12 @@ $ErrorActionPreference = "Stop"
 
 # Constants
 $BinaryName = "gsecutil"
-$Version = if ($env:VERSION) { 
-    $env:VERSION 
-} elseif (Test-Path "VERSION") { 
+$Version = if ($env:VERSION) {
+    $env:VERSION
+} elseif (Test-Path "VERSION") {
     Get-Content "VERSION" -Raw | ForEach-Object { $_.Trim() }
-} else { 
-    "1.0.0" 
+} else {
+    "1.0.0"
 }
 $BuildDir = "build"
 

@@ -18,18 +18,18 @@ jobs:
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
       version: ${{ steps.get_version.outputs.version }}
-    
+
     steps:
     - name: Check out code
       uses: actions/checkout@v4
       with:
         fetch-depth: 0  # Fetch full history for changelog generation
-      
+
     - name: Get version from tag and validate with VERSION file
       id: get_version
       run: |
         TAG_VERSION=${GITHUB_REF#refs/tags/v}
-        
+
         # Check if VERSION file exists and matches tag
         if [ -f "VERSION" ]; then
           FILE_VERSION=$(cat VERSION)
@@ -38,16 +38,16 @@ jobs:
             echo "Using tag version: $TAG_VERSION"
           fi
         fi
-        
+
         echo "version=$TAG_VERSION" >> $GITHUB_OUTPUT
         echo "Version: $TAG_VERSION"
-        
+
     - name: Generate changelog
       id: changelog
       run: |
         # Get the previous tag
         PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
-        
+
         if [ -z "$PREV_TAG" ]; then
           # If no previous tag, get recent commits (limit to avoid too much output)
           CHANGELOG=$(git log --pretty=format:"- %s (%h)" --reverse -10)
@@ -55,13 +55,13 @@ jobs:
           # Get commits since the previous tag
           CHANGELOG=$(git log $PREV_TAG..HEAD --pretty=format:"- %s (%h)" --reverse)
         fi
-        
+
         # Write changelog to file to avoid GitHub Actions output format issues
         echo "$CHANGELOG" > changelog.txt
-        
+
         # Set a simple flag that changelog exists
         echo "changelog_ready=true" >> $GITHUB_OUTPUT
-        
+
     - name: Create Release
       id: create_release
       run: |
@@ -113,18 +113,18 @@ jobs:
           echo "- [README.md](https://github.com/${{ github.repository }}/blob/v${{ steps.get_version.outputs.version }}/README.md) - Usage and examples"
           echo "- [BUILD.md](https://github.com/${{ github.repository }}/blob/v${{ steps.get_version.outputs.version }}/BUILD.md) - Build from source instructions"
         } > release_body.md
-        
+
         # Show the release body for debugging
         echo "=== Release Body ==="
         cat release_body.md
         echo "=== End Release Body ==="
-        
+
         # Create release using GitHub CLI
         PRE_RELEASE_FLAG=""
         if [[ "${{ github.ref }}" == *"alpha"* || "${{ github.ref }}" == *"beta"* || "${{ github.ref }}" == *"rc"* ]]; then
           PRE_RELEASE_FLAG="--prerelease"
         fi
-        
+
         gh release create "${{ github.ref_name }}" \
           --title "Release ${{ steps.get_version.outputs.version }}" \
           --notes-file release_body.md \
@@ -155,16 +155,16 @@ jobs:
           - goos: windows
             goarch: amd64
             asset_name: gsecutil-windows-amd64.exe
-    
+
     steps:
     - name: Check out code
       uses: actions/checkout@v4
-      
+
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
         go-version: '1.21'
-        
+
     - name: Cache Go modules
       uses: actions/cache@v4
       with:
@@ -172,10 +172,10 @@ jobs:
         key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-go-
-          
+
     - name: Install dependencies
       run: go mod download
-      
+
     - name: Build binary
       env:
         GOOS: ${{ matrix.goos }}
@@ -183,22 +183,22 @@ jobs:
       run: |
         VERSION=${{ needs.create-release.outputs.version }}
         go build -ldflags "-X main.Version=$VERSION -s -w" -o ${{ matrix.asset_name }} .
-        
+
         # Make executable (important for Unix-like systems)
         chmod +x ${{ matrix.asset_name }}
-        
+
         # Show file info
         ls -la ${{ matrix.asset_name }}
         file ${{ matrix.asset_name }} || true
-        
+
     - name: Generate checksums
       run: |
         # Generate SHA256 checksum
         sha256sum ${{ matrix.asset_name }} > ${{ matrix.asset_name }}.sha256
-        
+
         # Show checksum
         cat ${{ matrix.asset_name }}.sha256
-        
+
     - name: Upload Release Assets
       run: |
         # Upload binary and checksum using GitHub CLI
@@ -213,39 +213,39 @@ jobs:
     name: Create Combined Checksums
     runs-on: ubuntu-latest
     needs: [create-release, build-and-upload]
-    
+
     steps:
     - name: Check out code
       uses: actions/checkout@v4
-      
+
     - name: Create and upload combined checksums
       run: |
         VERSION=${{ needs.create-release.outputs.version }}
-        
+
         # Create checksums file header
         cat > checksums.txt << EOF
         # SHA256 Checksums for gsecutil v$VERSION
         # Generated on $(date -u)
-        
+
         # Download individual checksums (they're already uploaded as separate files)
         # Combined here for convenience
-        
+
         ## Verification
-        
+
         To verify the integrity of downloaded binaries:
-        
+
         \`\`\`bash
         # Download the binary and checksum file
         curl -LO https://github.com/${{ github.repository }}/releases/download/v$VERSION/gsecutil-linux-amd64
         curl -LO https://github.com/${{ github.repository }}/releases/download/v$VERSION/gsecutil-linux-amd64.sha256
-        
+
         # Verify checksum
         sha256sum -c gsecutil-linux-amd64.sha256
         \`\`\`
-        
+
         Note: Individual .sha256 files are available for each binary in this release.
         EOF
-        
+
         # Upload the combined checksums file with explicit repository
         gh release upload "v$VERSION" checksums.txt --repo ${{ github.repository }}
       env:
@@ -256,14 +256,14 @@ jobs:
     runs-on: ubuntu-latest
     needs: [create-release, build-and-upload, create-checksums]
     if: always()
-    
+
     steps:
     - name: Notify Success
       if: needs.build-and-upload.result == 'success' && needs.create-checksums.result == 'success'
       run: |
         echo "✅ Release v${{ needs.create-release.outputs.version }} created successfully!"
         echo "🔗 View release: https://github.com/${{ github.repository }}/releases/tag/v${{ needs.create-release.outputs.version }}"
-        
+
     - name: Notify Failure
       if: needs.build-and-upload.result == 'failure' || needs.create-checksums.result == 'failure'
       run: |

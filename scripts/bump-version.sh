@@ -27,7 +27,7 @@ show_help() {
     echo "Options:"
     echo "  --release      Create and push a git tag to trigger release"
     echo "  --major        Increment major version (X.0.0)"
-    echo "  --minor        Increment minor version (X.Y.0)"  
+    echo "  --minor        Increment minor version (X.Y.0)"
     echo "  --patch        Increment patch version (X.Y.Z) [default]"
     echo "  --dry-run      Show what would be done without making changes"
     echo ""
@@ -63,15 +63,15 @@ get_current_version() {
 increment_version() {
     local version=$1
     local part=$2
-    
+
     IFS='.' read -ra VERSION_PARTS <<< "$version"
     local major=${VERSION_PARTS[0]:-0}
     local minor=${VERSION_PARTS[1]:-0}
     local patch=${VERSION_PARTS[2]:-0}
-    
+
     # Remove any suffix from patch version
     patch=$(echo "$patch" | sed 's/-.*//')
-    
+
     case $part in
         "major")
             major=$((major + 1))
@@ -86,7 +86,7 @@ increment_version() {
             patch=$((patch + 1))
             ;;
     esac
-    
+
     echo "$major.$minor.$patch"
 }
 
@@ -94,7 +94,7 @@ increment_version() {
 update_version_file() {
     local new_version=$1
     local dry_run=$2
-    
+
     if [ "$dry_run" = "true" ]; then
         echo -e "${YELLOW}[DRY RUN] Would update VERSION file to: $new_version${NC}"
     else
@@ -106,7 +106,7 @@ update_version_file() {
 # Function to test build with new version
 test_build() {
     local dry_run=$1
-    
+
     if [ "$dry_run" = "true" ]; then
         echo -e "${YELLOW}[DRY RUN] Would test build with new version${NC}"
     else
@@ -129,7 +129,7 @@ test_build() {
 create_release() {
     local version=$1
     local dry_run=$2
-    
+
     if [ "$dry_run" = "true" ]; then
         echo -e "${YELLOW}[DRY RUN] Would create release tag: v$version${NC}"
     else
@@ -144,7 +144,7 @@ main() {
     local create_release_flag=false
     local increment_type="patch"
     local dry_run=false
-    
+
     # Parse arguments
     while [[ $# -gt 0 ]]; do
         case $1 in
@@ -189,14 +189,14 @@ main() {
                 ;;
         esac
     done
-    
+
     echo -e "${BLUE}🔧 gsecutil Version Bumping Tool${NC}"
     echo ""
-    
+
     # Get current version
     current_version=$(get_current_version)
     echo -e "Current version: ${YELLOW}$current_version${NC}"
-    
+
     # Determine new version
     if [ -z "$new_version" ]; then
         new_version=$(increment_version "$current_version" "$increment_type")
@@ -208,7 +208,7 @@ main() {
         fi
         echo -e "Target version: ${GREEN}$new_version${NC}"
     fi
-    
+
     # Check if version is the same
     if [ "$current_version" = "$new_version" ]; then
         echo -e "${YELLOW}Version is already $new_version${NC}"
@@ -216,21 +216,21 @@ main() {
             exit 0
         fi
     fi
-    
+
     echo ""
-    
+
     # Update VERSION file
     update_version_file "$new_version" "$dry_run"
-    
+
     # Test build
     test_build "$dry_run"
-    
+
     # Create release if requested
     if [ "$create_release_flag" = "true" ]; then
         echo ""
         create_release "$new_version" "$dry_run"
     fi
-    
+
     if [ "$dry_run" = "false" ]; then
         echo ""
         echo -e "${GREEN}✅ Version bump completed!${NC}"

@@ -115,7 +115,7 @@ func buildLogFilter(secretName, userFilter string, days int) string {
 	if secretName != "" {
 		// Use partial matching by searching for the secret name in resource paths
 		filter += fmt.Sprintf(` AND (
-  protoPayload.resourceName:"%s" 
+  protoPayload.resourceName:"%s"
   OR protoPayload.request.name:"%s"
   OR protoPayload.response.name:"%s"
 )`, secretName, secretName, secretName)

@@ -92,7 +92,7 @@ See Git history for changes in versions 0.1.7 and earlier.
 ## Legend
 
 - 🚀 Major Features
-- ✨ New Features  
+- ✨ New Features
 - 🔧 Improvements
 - 🐛 Bug Fixes
 - 📖 Documentation

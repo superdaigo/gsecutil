@@ -187,7 +187,7 @@ gsecutil describe my-secret --format json
 - **Default version** (current active version, state, creation time)
 - **Replication strategy** (automatic multi-region or user-managed)
 - **Labels** (sorted alphabetically for organization)
-- **Tags/Annotations** (additional metadata, sorted alphabetically)  
+- **Tags/Annotations** (additional metadata, sorted alphabetically)
 - Version aliases (if configured)
 - Expiration and rotation settings (if configured)
 - Pub/Sub topic integrations (if configured)

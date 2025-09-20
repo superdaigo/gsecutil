@@ -49,7 +49,7 @@ build-darwin-arm64:
 	mkdir -p $(BUILD_DIR)
 	GOOS=darwin GOARCH=arm64 go build -ldflags "-X main.Version=$(VERSION)" -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-arm64 .
 
-# Build for all platforms  
+# Build for all platforms
 build-all: build-linux build-linux-arm64 build-windows build-darwin build-darwin-arm64
 
 # Run tests
