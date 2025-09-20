@@ -33,7 +33,7 @@ jobs:
         go-version: '1.21'
         
     - name: Cache Go modules
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ~/go/pkg/mod
         key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
@@ -113,12 +113,7 @@ jobs:
         if [ -z "$CHANGELOG" ]; then
           CHANGELOG="- No new changes since last release"
         fi
-        
-        # Escape for JSON
-        CHANGELOG="${CHANGELOG//'%'/'%25'}"
-        CHANGELOG="${CHANGELOG//$'\n'/'%0A'}"
-        CHANGELOG="${CHANGELOG//$'\r'/'%0D'}"
-        
+                
         echo "changelog=$CHANGELOG" >> $GITHUB_OUTPUT
         
     - name: Build all platforms
