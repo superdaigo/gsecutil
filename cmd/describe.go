@@ -10,8 +10,17 @@ import (
 var describeCmd = &cobra.Command{
 	Use:   "describe SECRET_NAME",
 	Short: "Describe a secret in Google Secret Manager",
-	Long: `Get detailed information about a secret including metadata,
-labels, versions, and other properties.`,
+	Long: `Get comprehensive information about a secret including:
+- Basic metadata (name, creation time, ETag)
+- Default version information (version number, state, creation time)
+- Replication strategy (automatic or user-managed)
+- Labels (key-value pairs for organization)
+- Tags/Annotations (additional metadata)
+- Version aliases (if any)
+- Expiration and rotation settings (if configured)
+- Pub/Sub topics (if configured)
+
+Use --show-versions to also display detailed information about all versions.`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		secretName := args[0]

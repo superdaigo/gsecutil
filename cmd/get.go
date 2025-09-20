@@ -12,8 +12,16 @@ import (
 var getCmd = &cobra.Command{
 	Use:   "get SECRET_NAME",
 	Short: "Get a secret value from Google Secret Manager",
-	Long: `Retrieve the latest version of a secret value from Google Secret Manager.
-You can optionally specify a version number to get a specific version.`,
+	Long: `Retrieve a secret value from Google Secret Manager.
+
+By default, retrieves the latest (most recent) version of the secret.
+You can specify a specific version number to access older versions.
+
+Examples:
+  gsecutil get my-secret                    # Get latest version
+  gsecutil get my-secret --version 3        # Get specific version 3
+  gsecutil get my-secret -v 1 --clipboard   # Get version 1 and copy to clipboard
+  gsecutil get my-secret --show-metadata    # Show version info along with value`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		secretName := args[0]

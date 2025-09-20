@@ -12,7 +12,7 @@ A command-line utility that provides a simple wrapper around the `gcloud` CLI fo
 - **Audit logging** - view who accessed secrets, when, and what operations were performed
 - **Interactive secret input** with hidden password prompts
 - **File-based secret input** for loading secrets from files
-- **Comprehensive command set**: get, create, update, delete, list, describe, audit
+- **Comprehensive command set**: get, create, update, delete, list, describe, auditlog
 - **Flexible output formatting** (JSON, YAML, table)
 - **Project-aware** with global project flag support
 
@@ -74,24 +74,35 @@ make build-all
 
 #### Get Secret
 
-Retrieve a secret value from Google Secret Manager:
+Retrieve a secret value from Google Secret Manager. By default, gets the latest version, but you can specify any version:
 
 ```bash
 # Get latest version of a secret
 gsecutil get my-secret
 
-# Get specific version
-gsecutil get my-secret --version 2
+# Get specific version (useful for rollbacks, debugging, or accessing historical values)
+gsecutil get my-secret --version 1
+gsecutil get my-secret -v 3
 
 # Get secret and copy to clipboard
 gsecutil get my-secret --clipboard
 
+# Get specific version with clipboard
+gsecutil get my-secret --version 2 --clipboard
+
 # Get secret with version metadata (version, created time, state)
 gsecutil get my-secret --show-metadata
+gsecutil get my-secret -v 1 --show-metadata    # Older version with metadata
 
 # Get secret from specific project
 gsecutil get my-secret --project my-gcp-project
 ```
+
+**Version Support:**
+- 🔄 **Latest version**: Default behavior when no `--version` is specified
+- 📅 **Historical versions**: Access any previous version by number (e.g., `--version 1`, `--version 2`)
+- 🔍 **Version metadata**: Use `--show-metadata` to see version details (creation time, state, ETag)
+- 📋 **Clipboard support**: Works with any version using `--clipboard`
 
 #### Create Secret
 
@@ -158,36 +169,82 @@ gsecutil list --limit 10
 
 #### Describe Secret
 
-Get detailed information about a secret:
+Get comprehensive information about a secret including metadata, labels, tags, default version, and replication strategy:
 
 ```bash
-# Describe secret
+# Describe secret with comprehensive information
 gsecutil describe my-secret
 
-# Describe with detailed version information
+# Describe with detailed information about all versions
 gsecutil describe my-secret --show-versions
 
-# Describe with JSON output
+# Describe with JSON output (raw gcloud format)
 gsecutil describe my-secret --format json
 ```
 
-#### Audit Secret
+**Enhanced Information Displayed:**
+- Basic metadata (name, creation time, ETag)
+- **Default version** (current active version, state, creation time)
+- **Replication strategy** (automatic multi-region or user-managed)
+- **Labels** (sorted alphabetically for organization)
+- **Tags/Annotations** (additional metadata, sorted alphabetically)  
+- Version aliases (if configured)
+- Expiration and rotation settings (if configured)
+- Pub/Sub topic integrations (if configured)
 
-View audit log entries for a secret to see who accessed it, when, and what operations were performed:
+#### Audit Log
+
+View audit log entries for secrets to see who accessed them, when, and what operations were performed.
+Supports flexible filtering with partial matching for both secret names and usernames:
 
 ```bash
-# Show audit log for the last 7 days
-gsecutil audit my-secret
+# Show all Secret Manager audit logs
+gsecutil auditlog
+
+# Show logs for secrets matching a pattern (partial match)
+gsecutil auditlog my-secret
+
+# Show logs for a specific user (partial match)
+gsecutil auditlog --user john
+
+# Filter by specific operations (single or multiple)
+gsecutil auditlog --operations ACCESS
+gsecutil auditlog --operations ACCESS,CREATE,DELETE
+
+# Combine all filters for precise results
+gsecutil auditlog db --user admin --operations GET_METADATA,LIST
 
 # Show audit log for the last 30 days
-gsecutil audit my-secret --days 30
+gsecutil auditlog my-secret --days 30
 
 # Show audit log with JSON output
-gsecutil audit my-secret --format json
+gsecutil auditlog my-secret --format json
 
 # Limit the number of entries returned
-gsecutil audit my-secret --limit 10
+gsecutil auditlog --limit 20
 ```
+
+**Key Features:**
+- **Optional secret name**: Show all Secret Manager logs when no secret name is provided
+- **Partial matching**: Both secret names and usernames support partial/substring matching
+- **🔍 Operations filtering**: Filter by specific operation types (ACCESS, CREATE, UPDATE, DELETE, etc.)
+- **Flexible filtering**: Combine secret name, user, and operations filters for precise results
+- **Case-insensitive**: All partial matching is case-insensitive
+- **Multiple operations**: Specify multiple operations separated by commas
+
+**Available Operations:**
+- `ACCESS` - Reading secret values
+- `CREATE` - Creating new secrets
+- `UPDATE` - Creating new secret versions
+- `DELETE` - Deleting secrets
+- `GET_METADATA` - Getting secret/version metadata
+- `LIST` - Listing secrets
+- `UPDATE_METADATA` - Updating secret metadata
+- `DESTROY_VERSION` - Destroying specific versions
+- `DISABLE_VERSION` - Disabling specific versions
+- `ENABLE_VERSION` - Enabling specific versions
+
+**Note**: The `auditlog` command requires Data Access audit logs to be enabled for the Secret Manager API. See [docs/audit-logging.md](docs/audit-logging.md) for detailed setup instructions.
 
 ### Examples
 

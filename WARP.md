@@ -52,7 +52,7 @@ The application uses the [Cobra CLI framework](https://github.com/spf13/cobra) w
 - **`delete`** - Deletes secrets with confirmation prompts
 - **`list`** - Lists secrets with filtering and formatting options  
 - **`describe`** - Shows detailed secret metadata with optional version history
-- **`audit`** - Shows audit log entries for secret access, including who accessed secrets, when, and what operations were performed
+- **`auditlog`** - Shows audit log entries for secret access, including who accessed secrets, when, and what operations were performed
 
 ### Shared Utilities (`cmd/clipboard.go`)
 Contains core utility functions used across commands:
@@ -62,12 +62,13 @@ Contains core utility functions used across commands:
 - **`describeSecretWithVersions()`** - Enhanced secret descriptions with version history
 - **`SecretVersionInfo`** and **`SecretInfo`** structs - Data models for gcloud JSON responses
 
-### Audit Functionality (`cmd/audit.go`)
-Provides audit log querying capabilities:
+### Audit Log Functionality (`cmd/auditlog.go`)
+Provides audit log querying capabilities through the `auditlog` command:
 - **`AuditLogEntry`** struct - Data model for Google Cloud Logging audit log entries
 - **`getOperationName()`** - Converts gcloud method names to human-readable operation names
 - Uses `gcloud logging read` to query Cloud Audit Logs for Secret Manager events
 - Supports filtering by time range, output formatting, and result limiting
+- Requires Data Access audit logs to be enabled for comprehensive secret access tracking
 
 ### Integration with gcloud
 All secret operations are performed by spawning `gcloud` subprocesses:
