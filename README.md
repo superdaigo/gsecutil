@@ -30,11 +30,24 @@ Download the latest release for your platform from the [releases page](https://g
 
 | Platform | Architecture | Download |
 |----------|--------------|----------|
-| Linux | x64 | `gsecutil-linux-amd64` |
-| Linux | ARM64 | `gsecutil-linux-arm64` |
-| macOS | Intel | `gsecutil-darwin-amd64` |
-| macOS | Apple Silicon | `gsecutil-darwin-arm64` |
-| Windows | x64 | `gsecutil-windows-amd64.exe` |
+| Linux | x64 | `gsecutil-linux-amd64-v{version}` |
+| Linux | ARM64 | `gsecutil-linux-arm64-v{version}` |
+| macOS | Intel | `gsecutil-darwin-amd64-v{version}` |
+| macOS | Apple Silicon | `gsecutil-darwin-arm64-v{version}` |
+| Windows | x64 | `gsecutil-windows-amd64-v{version}.exe` |
+
+**After Download:** Rename the binary for consistent usage:
+
+```bash
+# Linux/macOS example:
+mv gsecutil-linux-amd64-v0.3.0 gsecutil
+chmod +x gsecutil
+
+# Windows example (PowerShell/Command Prompt):
+ren gsecutil-windows-amd64-v0.3.0.exe gsecutil.exe
+```
+
+This allows you to use `gsecutil` consistently regardless of version.
 
 ### Install with Go
 
