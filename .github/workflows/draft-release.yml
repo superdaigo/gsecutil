@@ -103,18 +103,19 @@ jobs:
 
         if [ -z "$LATEST_TAG" ]; then
           # If no tags exist, get all commits
-          CHANGELOG=$(git log --pretty=format:"- %s (%h)" --reverse)
+          git log --pretty=format:"- %s (%h)" --reverse > changelog.txt
         else
           # Get commits since the latest tag
-          CHANGELOG=$(git log $LATEST_TAG..HEAD --pretty=format:"- %s (%h)" --reverse)
+          git log $LATEST_TAG..HEAD --pretty=format:"- %s (%h)" --reverse > changelog.txt
         fi
 
         # If no new commits, create a placeholder
-        if [ -z "$CHANGELOG" ]; then
-          CHANGELOG="- No new changes since last release"
+        if [ ! -s changelog.txt ]; then
+          echo "- No new changes since last release" > changelog.txt
         fi
 
-        echo "changelog=$CHANGELOG" >> $GITHUB_OUTPUT
+        # Set flag that changelog is ready (don't put multiline content in output)
+        echo "changelog_ready=true" >> $GITHUB_OUTPUT
 
     - name: Build all platforms
       run: |
@@ -143,53 +144,58 @@ jobs:
         VERSION=${{ steps.version.outputs.next_version }}
 
         # Create release body
-        cat > release_body.md << 'EOF'
-        ## ⚠️ Draft Release - Testing Required
+        {
+          echo "## ⚠️ Draft Release - Testing Required"
+          echo ""
+          echo "This is an automated draft release created from the latest main branch."
+          echo "**This release has not been manually reviewed or tested.**"
+          echo ""
+          echo "### Changes Since Last Release"
+          echo ""
+          if [ -f changelog.txt ]; then
+            cat changelog.txt
+          else
+            echo "- No changes detected"
+          fi
+          echo ""
 
-        This is an automated draft release created from the latest main branch.
-        **This release has not been manually reviewed or tested.**
-
-        ### Changes Since Last Release
-
-        ${{ steps.changelog.outputs.changelog }}
-
-        ### Installation (Draft)
-
-        **Note:** These are pre-release binaries. Use at your own risk.
-
-        | Platform | Architecture | Download |
-        |----------|--------------|----------|
-        | Linux | x64 | [gsecutil-linux-amd64](https://github.com/${{ github.repository }}/releases/download/v$VERSION/gsecutil-linux-amd64) |
-        | Linux | ARM64 | [gsecutil-linux-arm64](https://github.com/${{ github.repository }}/releases/download/v$VERSION/gsecutil-linux-arm64) |
-        | macOS | Intel | [gsecutil-darwin-amd64](https://github.com/${{ github.repository }}/releases/download/v$VERSION/gsecutil-darwin-amd64) |
-        | macOS | Apple Silicon | [gsecutil-darwin-arm64](https://github.com/${{ github.repository }}/releases/download/v$VERSION/gsecutil-darwin-arm64) |
-        | Windows | x64 | [gsecutil-windows-amd64.exe](https://github.com/${{ github.repository }}/releases/download/v$VERSION/gsecutil-windows-amd64.exe) |
-
-        ### Testing Checklist
-
-        Before publishing this release, please verify:
-
-        - [ ] All binaries download and execute correctly
-        - [ ] Basic functionality works (`gsecutil --help`, `gsecutil --version`)
-        - [ ] Core commands work with test secrets
-        - [ ] Cross-platform compatibility verified
-        - [ ] Documentation is up to date
-        - [ ] No security vulnerabilities introduced
-
-        ### Publishing
-
-        To publish this release:
-        1. Test the binaries thoroughly
-        2. Update the release notes if needed
-        3. Uncheck "This is a pre-release" if stable
-        4. Click "Publish release"
-
-        Or create a proper release by pushing a version tag:
-        ```bash
-        git tag v$VERSION
-        git push origin v$VERSION
-        ```
-        EOF
+          echo "### Installation (Draft)"
+          echo ""
+          echo "**Note:** These are pre-release binaries. Use at your own risk."
+          echo ""
+          echo "| Platform | Architecture | Download |"
+          echo "|----------|--------------|----------|"
+          echo "| Linux | x64 | [gsecutil-linux-amd64](https://github.com/${{ github.repository }}/releases/download/v$VERSION/gsecutil-linux-amd64) |"
+          echo "| Linux | ARM64 | [gsecutil-linux-arm64](https://github.com/${{ github.repository }}/releases/download/v$VERSION/gsecutil-linux-arm64) |"
+          echo "| macOS | Intel | [gsecutil-darwin-amd64](https://github.com/${{ github.repository }}/releases/download/v$VERSION/gsecutil-darwin-amd64) |"
+          echo "| macOS | Apple Silicon | [gsecutil-darwin-arm64](https://github.com/${{ github.repository }}/releases/download/v$VERSION/gsecutil-darwin-arm64) |"
+          echo "| Windows | x64 | [gsecutil-windows-amd64.exe](https://github.com/${{ github.repository }}/releases/download/v$VERSION/gsecutil-windows-amd64.exe) |"
+          echo ""
+          echo "### Testing Checklist"
+          echo ""
+          echo "Before publishing this release, please verify:"
+          echo ""
+          echo "- [ ] All binaries download and execute correctly"
+          echo "- [ ] Basic functionality works (\`gsecutil --help\`, \`gsecutil --version\`)"
+          echo "- [ ] Core commands work with test secrets"
+          echo "- [ ] Cross-platform compatibility verified"
+          echo "- [ ] Documentation is up to date"
+          echo "- [ ] No security vulnerabilities introduced"
+          echo ""
+          echo "### Publishing"
+          echo ""
+          echo "To publish this release:"
+          echo "1. Test the binaries thoroughly"
+          echo "2. Update the release notes if needed"
+          echo "3. Uncheck \"This is a pre-release\" if stable"
+          echo "4. Click \"Publish release\""
+          echo ""
+          echo "Or create a proper release by pushing a version tag:"
+          echo "\`\`\`bash"
+          echo "git tag v$VERSION"
+          echo "git push origin v$VERSION"
+          echo "\`\`\`"
+        } > release_body.md
 
         # Create draft release using GitHub CLI
         gh release create "v$VERSION" \

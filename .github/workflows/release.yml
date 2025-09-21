@@ -50,14 +50,16 @@ jobs:
 
         if [ -z "$PREV_TAG" ]; then
           # If no previous tag, get recent commits (limit to avoid too much output)
-          CHANGELOG=$(git log --pretty=format:"- %s (%h)" --reverse -10)
+          git log --pretty=format:"- %s (%h)" --reverse -10 > changelog.txt
         else
           # Get commits since the previous tag
-          CHANGELOG=$(git log $PREV_TAG..HEAD --pretty=format:"- %s (%h)" --reverse)
+          git log $PREV_TAG..HEAD --pretty=format:"- %s (%h)" --reverse > changelog.txt
         fi
 
-        # Write changelog to file to avoid GitHub Actions output format issues
-        echo "$CHANGELOG" > changelog.txt
+        # Ensure changelog file exists and has content
+        if [ ! -s changelog.txt ]; then
+          echo "- Release created from tag ${{ github.ref_name }}" > changelog.txt
+        fi
 
         # Set a simple flag that changelog exists
         echo "changelog_ready=true" >> $GITHUB_OUTPUT
