@@ -85,11 +85,11 @@ jobs:
           echo ""
           echo "| Platform | Architecture | Download |"
           echo "|----------|--------------|----------|"
-          echo "| Linux | x64 | [gsecutil-linux-amd64](https://github.com/${{ github.repository }}/releases/download/v${{ steps.get_version.outputs.version }}/gsecutil-linux-amd64) |"
-          echo "| Linux | ARM64 | [gsecutil-linux-arm64](https://github.com/${{ github.repository }}/releases/download/v${{ steps.get_version.outputs.version }}/gsecutil-linux-arm64) |"
-          echo "| macOS | Intel | [gsecutil-darwin-amd64](https://github.com/${{ github.repository }}/releases/download/v${{ steps.get_version.outputs.version }}/gsecutil-darwin-amd64) |"
-          echo "| macOS | Apple Silicon | [gsecutil-darwin-arm64](https://github.com/${{ github.repository }}/releases/download/v${{ steps.get_version.outputs.version }}/gsecutil-darwin-arm64) |"
-          echo "| Windows | x64 | [gsecutil-windows-amd64.exe](https://github.com/${{ github.repository }}/releases/download/v${{ steps.get_version.outputs.version }}/gsecutil-windows-amd64.exe) |"
+          echo "| Linux | x64 | [gsecutil-linux-amd64-v${{ steps.get_version.outputs.version }}](https://github.com/${{ github.repository }}/releases/download/v${{ steps.get_version.outputs.version }}/gsecutil-linux-amd64-v${{ steps.get_version.outputs.version }}) |"
+          echo "| Linux | ARM64 | [gsecutil-linux-arm64-v${{ steps.get_version.outputs.version }}](https://github.com/${{ github.repository }}/releases/download/v${{ steps.get_version.outputs.version }}/gsecutil-linux-arm64-v${{ steps.get_version.outputs.version }}) |"
+          echo "| macOS | Intel | [gsecutil-darwin-amd64-v${{ steps.get_version.outputs.version }}](https://github.com/${{ github.repository }}/releases/download/v${{ steps.get_version.outputs.version }}/gsecutil-darwin-amd64-v${{ steps.get_version.outputs.version }}) |"
+          echo "| macOS | Apple Silicon | [gsecutil-darwin-arm64-v${{ steps.get_version.outputs.version }}](https://github.com/${{ github.repository }}/releases/download/v${{ steps.get_version.outputs.version }}/gsecutil-darwin-arm64-v${{ steps.get_version.outputs.version }}) |"
+          echo "| Windows | x64 | [gsecutil-windows-amd64-v${{ steps.get_version.outputs.version }}.exe](https://github.com/${{ github.repository }}/releases/download/v${{ steps.get_version.outputs.version }}/gsecutil-windows-amd64-v${{ steps.get_version.outputs.version }}.exe) |"
           echo ""
           echo "### Install with Go"
           echo ""
@@ -100,8 +100,8 @@ jobs:
           echo "### Verify Installation"
           echo ""
           echo "\`\`\`bash"
-          echo "./gsecutil-linux-amd64 --version  # Linux example"
-          echo "gsecutil --version                # If installed with Go"
+          echo "./gsecutil-linux-amd64-v${{ steps.get_version.outputs.version }} --version  # Linux example"
+          echo "gsecutil --version                                                         # If installed with Go"
           echo "\`\`\`"
           echo ""
           echo "## Requirements"
@@ -144,19 +144,19 @@ jobs:
         include:
           - goos: linux
             goarch: amd64
-            asset_name: gsecutil-linux-amd64
+            asset_base: gsecutil-linux-amd64
           - goos: linux
             goarch: arm64
-            asset_name: gsecutil-linux-arm64
+            asset_base: gsecutil-linux-arm64
           - goos: darwin
             goarch: amd64
-            asset_name: gsecutil-darwin-amd64
+            asset_base: gsecutil-darwin-amd64
           - goos: darwin
             goarch: arm64
-            asset_name: gsecutil-darwin-arm64
+            asset_base: gsecutil-darwin-arm64
           - goos: windows
             goarch: amd64
-            asset_name: gsecutil-windows-amd64.exe
+            asset_base: gsecutil-windows-amd64
 
     steps:
     - name: Check out code
@@ -184,29 +184,41 @@ jobs:
         GOARCH: ${{ matrix.goarch }}
       run: |
         VERSION=${{ needs.create-release.outputs.version }}
-        go build -ldflags "-X main.Version=$VERSION -s -w" -o ${{ matrix.asset_name }} .
+
+        # Create versioned asset name with proper .exe handling for Windows
+        if [[ "${{ matrix.goos }}" == "windows" ]]; then
+          ASSET_NAME="${{ matrix.asset_base }}-v${VERSION}.exe"
+        else
+          ASSET_NAME="${{ matrix.asset_base }}-v${VERSION}"
+        fi
+        echo "Building: $ASSET_NAME"
+
+        go build -ldflags "-X main.Version=$VERSION -s -w" -o "$ASSET_NAME" .
 
         # Make executable (important for Unix-like systems)
-        chmod +x ${{ matrix.asset_name }}
+        chmod +x "$ASSET_NAME"
+
+        # Export asset name for other steps
+        echo "asset_name=$ASSET_NAME" >> $GITHUB_ENV
 
         # Show file info
-        ls -la ${{ matrix.asset_name }}
-        file ${{ matrix.asset_name }} || true
+        ls -la "$ASSET_NAME"
+        file "$ASSET_NAME" || true
 
     - name: Generate checksums
       run: |
         # Generate SHA256 checksum
-        sha256sum ${{ matrix.asset_name }} > ${{ matrix.asset_name }}.sha256
+        sha256sum "$asset_name" > "$asset_name.sha256"
 
         # Show checksum
-        cat ${{ matrix.asset_name }}.sha256
+        cat "$asset_name.sha256"
 
     - name: Upload Release Assets
       run: |
         # Upload binary and checksum using GitHub CLI
         gh release upload "v${{ needs.create-release.outputs.version }}" \
-          "${{ matrix.asset_name }}" \
-          "${{ matrix.asset_name }}.sha256" \
+          "$asset_name" \
+          "$asset_name.sha256" \
           --repo ${{ github.repository }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -237,12 +249,12 @@ jobs:
         To verify the integrity of downloaded binaries:
 
         \`\`\`bash
-        # Download the binary and checksum file
-        curl -LO https://github.com/${{ github.repository }}/releases/download/v$VERSION/gsecutil-linux-amd64
-        curl -LO https://github.com/${{ github.repository }}/releases/download/v$VERSION/gsecutil-linux-amd64.sha256
+        # Download the binary and checksum file (example for Linux x64)
+        curl -LO https://github.com/${{ github.repository }}/releases/download/v$VERSION/gsecutil-linux-amd64-v$VERSION
+        curl -LO https://github.com/${{ github.repository }}/releases/download/v$VERSION/gsecutil-linux-amd64-v$VERSION.sha256
 
         # Verify checksum
-        sha256sum -c gsecutil-linux-amd64.sha256
+        sha256sum -c gsecutil-linux-amd64-v$VERSION.sha256
         \`\`\`
 
         Note: Individual .sha256 files are available for each binary in this release.

@@ -122,12 +122,12 @@ jobs:
         VERSION=${{ steps.version.outputs.next_version }}
         mkdir -p build
 
-        # Build for each platform
-        GOOS=linux GOARCH=amd64 go build -ldflags "-X main.Version=$VERSION -s -w" -o build/gsecutil-linux-amd64 .
-        GOOS=linux GOARCH=arm64 go build -ldflags "-X main.Version=$VERSION -s -w" -o build/gsecutil-linux-arm64 .
-        GOOS=darwin GOARCH=amd64 go build -ldflags "-X main.Version=$VERSION -s -w" -o build/gsecutil-darwin-amd64 .
-        GOOS=darwin GOARCH=arm64 go build -ldflags "-X main.Version=$VERSION -s -w" -o build/gsecutil-darwin-arm64 .
-        GOOS=windows GOARCH=amd64 go build -ldflags "-X main.Version=$VERSION -s -w" -o build/gsecutil-windows-amd64.exe .
+        # Build for each platform with versioned names
+        GOOS=linux GOARCH=amd64 go build -ldflags "-X main.Version=$VERSION -s -w" -o build/gsecutil-linux-amd64-v$VERSION .
+        GOOS=linux GOARCH=arm64 go build -ldflags "-X main.Version=$VERSION -s -w" -o build/gsecutil-linux-arm64-v$VERSION .
+        GOOS=darwin GOARCH=amd64 go build -ldflags "-X main.Version=$VERSION -s -w" -o build/gsecutil-darwin-amd64-v$VERSION .
+        GOOS=darwin GOARCH=arm64 go build -ldflags "-X main.Version=$VERSION -s -w" -o build/gsecutil-darwin-arm64-v$VERSION .
+        GOOS=windows GOARCH=amd64 go build -ldflags "-X main.Version=$VERSION -s -w" -o build/gsecutil-windows-amd64-v$VERSION.exe .
 
         # Generate checksums
         cd build
@@ -165,11 +165,11 @@ jobs:
           echo ""
           echo "| Platform | Architecture | Download |"
           echo "|----------|--------------|----------|"
-          echo "| Linux | x64 | [gsecutil-linux-amd64](https://github.com/${{ github.repository }}/releases/download/v$VERSION/gsecutil-linux-amd64) |"
-          echo "| Linux | ARM64 | [gsecutil-linux-arm64](https://github.com/${{ github.repository }}/releases/download/v$VERSION/gsecutil-linux-arm64) |"
-          echo "| macOS | Intel | [gsecutil-darwin-amd64](https://github.com/${{ github.repository }}/releases/download/v$VERSION/gsecutil-darwin-amd64) |"
-          echo "| macOS | Apple Silicon | [gsecutil-darwin-arm64](https://github.com/${{ github.repository }}/releases/download/v$VERSION/gsecutil-darwin-arm64) |"
-          echo "| Windows | x64 | [gsecutil-windows-amd64.exe](https://github.com/${{ github.repository }}/releases/download/v$VERSION/gsecutil-windows-amd64.exe) |"
+          echo "| Linux | x64 | [gsecutil-linux-amd64-v$VERSION](https://github.com/${{ github.repository }}/releases/download/v$VERSION/gsecutil-linux-amd64-v$VERSION) |"
+          echo "| Linux | ARM64 | [gsecutil-linux-arm64-v$VERSION](https://github.com/${{ github.repository }}/releases/download/v$VERSION/gsecutil-linux-arm64-v$VERSION) |"
+          echo "| macOS | Intel | [gsecutil-darwin-amd64-v$VERSION](https://github.com/${{ github.repository }}/releases/download/v$VERSION/gsecutil-darwin-amd64-v$VERSION) |"
+          echo "| macOS | Apple Silicon | [gsecutil-darwin-arm64-v$VERSION](https://github.com/${{ github.repository }}/releases/download/v$VERSION/gsecutil-darwin-arm64-v$VERSION) |"
+          echo "| Windows | x64 | [gsecutil-windows-amd64-v$VERSION.exe](https://github.com/${{ github.repository }}/releases/download/v$VERSION/gsecutil-windows-amd64-v$VERSION.exe) |"
           echo ""
           echo "### Testing Checklist"
           echo ""
