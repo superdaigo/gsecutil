@@ -1,20 +1,34 @@
 # gsecutil - Google Secret Manager Utility
 
-A command-line utility that provides a simple wrapper around the `gcloud` CLI for managing Google Secret Manager secrets. `gsecutil` offers simplified commands for getting, creating, updating, deleting, listing, and describing secrets, with the added convenience of copying secret values directly to your clipboard.
+🚀 **v1.0.0** - A comprehensive command-line utility for Google Secret Manager administration. `gsecutil` provides a complete suite of tools for secret management, access control, and compliance auditing with advanced IAM policy analysis and project-level permission management.
 
-## Features
+## ✨ Features
 
-- **Simple wrapper** around `gcloud` CLI for Google Secret Manager operations
-- **Cross-platform** support (Linux, macOS, Windows)
+### 🔐 **Complete Secret Management**
+- **CRUD operations**: Create, read, update, delete secrets with simplified commands
+- **Version management**: Access any version, view version history and metadata
+- **Cross-platform** support (Linux, macOS, Windows with ARM64 support)
 - **Clipboard integration** - copy secret values directly to clipboard
-- **Version metadata** - show version numbers, creation times, and states
-- **Version history** - view all versions with detailed timestamps
-- **Audit logging** - view who accessed secrets, when, and what operations were performed
-- **Interactive secret input** with hidden password prompts
-- **File-based secret input** for loading secrets from files
-- **Comprehensive command set**: get, create, update, delete, list, describe, auditlog
-- **Flexible output formatting** (JSON, YAML, table)
-- **Project-aware** with global project flag support
+- **Interactive & file input** - secure prompts or file-based secret loading
+
+### 🛡️ **Advanced Access Management** *(NEW in v1.0.0)*
+- **Complete IAM policy analysis** - view who has access to secrets at any level
+- **Multi-level permission checking** - secret-level and project-level access analysis
+- **IAM condition awareness** - full support for conditional access policies with CEL expressions
+- **Principal management** - grant/revoke access for users, groups, and service accounts
+- **Project-wide analysis** - identify Editor/Owner roles providing Secret Manager access
+
+### 📊 **Audit & Compliance**
+- **Comprehensive audit logging** - track who accessed secrets, when, and what operations
+- **Principal-based filtering** - see all secrets accessible by specific users/groups
+- **Flexible filtering** - by secret, principal, operation type, time range
+- **Condition evaluation** - understand when conditional access applies
+
+### 🎯 **Production-Ready**
+- **Consistent API** - unified parameter naming across all commands
+- **Enterprise features** - IAM conditions, project-level analysis, compliance auditing
+- **Robust error handling** - graceful handling of missing permissions and network issues
+- **Flexible output** - JSON, YAML, table formats with rich formatting
 
 ## Prerequisites
 
@@ -40,11 +54,11 @@ Download the latest release for your platform from the [releases page](https://g
 
 ```bash
 # Linux/macOS example:
-mv gsecutil-linux-amd64-v0.3.0 gsecutil
+mv gsecutil-linux-amd64-v1.0.0 gsecutil
 chmod +x gsecutil
 
 # Windows example (PowerShell/Command Prompt):
-ren gsecutil-windows-amd64-v0.3.0.exe gsecutil.exe
+ren gsecutil-windows-amd64-v1.0.0.exe gsecutil.exe
 ```
 
 This allows you to use `gsecutil` consistently regardless of version.
@@ -218,14 +232,14 @@ gsecutil auditlog
 gsecutil auditlog my-secret
 
 # Show logs for a specific user (partial match)
-gsecutil auditlog --user john
+gsecutil auditlog --principal john
 
 # Filter by specific operations (single or multiple)
-gsecutil auditlog --operations ACCESS
-gsecutil auditlog --operations ACCESS,CREATE,DELETE
+gsecutil auditlog --operation ACCESS
+gsecutil auditlog --operation ACCESS,CREATE,DELETE
 
 # Combine all filters for precise results
-gsecutil auditlog db --user admin --operations GET_METADATA,LIST
+gsecutil auditlog db --principal admin --operation GET_METADATA,LIST
 
 # Show audit log for the last 30 days
 gsecutil auditlog my-secret --days 30
@@ -239,9 +253,9 @@ gsecutil auditlog --limit 20
 
 **Key Features:**
 - **Optional secret name**: Show all Secret Manager logs when no secret name is provided
-- **Partial matching**: Both secret names and usernames support partial/substring matching
+- **Partial matching**: Both secret names and principals support partial/substring matching
 - **🔍 Operations filtering**: Filter by specific operation types (ACCESS, CREATE, UPDATE, DELETE, etc.)
-- **Flexible filtering**: Combine secret name, user, and operations filters for precise results
+- **Flexible filtering**: Combine secret name, principal, and operation filters for precise results
 - **Case-insensitive**: All partial matching is case-insensitive
 - **Multiple operations**: Specify multiple operations separated by commas
 
@@ -258,6 +272,49 @@ gsecutil auditlog --limit 20
 - `ENABLE_VERSION` - Enabling specific versions
 
 **Note**: The `auditlog` command requires Data Access audit logs to be enabled for the Secret Manager API. See [docs/audit-logging.md](docs/audit-logging.md) for detailed setup instructions.
+
+#### Access Management *(NEW in v1.0.0)*
+
+Manage IAM access permissions for secrets with comprehensive policy analysis:
+
+```bash
+# List all principals with access to a secret
+gsecutil access list my-secret
+
+# Include project-level permissions in the analysis
+gsecutil access list my-secret --include-project
+
+# Grant access to a user
+gsecutil access grant my-secret --principal user:alice@example.com
+
+# Grant specific role to a service account
+gsecutil access grant my-secret \
+  --principal serviceAccount:app@project.iam.gserviceaccount.com \
+  --role roles/secretmanager.viewer
+
+# Revoke access from a user
+gsecutil access revoke my-secret --principal user:bob@example.com
+
+# Show project-level Secret Manager permissions
+gsecutil access project
+
+# List all secrets a user can access
+gsecutil list --principal user:alice@example.com
+```
+
+**Key Access Management Features:**
+- **Multi-level analysis**: Checks both secret-level and project-level IAM policies
+- **IAM condition support**: Shows conditional access with CEL expressions, titles, and descriptions
+- **Principal types**: Users, groups, service accounts, domains, allUsers, allAuthenticatedUsers
+- **Role management**: Grant/revoke with automatic role validation
+- **Project-wide visibility**: Identify Editor/Owner roles providing Secret Manager access
+
+**Available Roles:**
+- `roles/secretmanager.secretAccessor` - Can access secret values (default)
+- `roles/secretmanager.viewer` - Can view metadata only
+- `roles/secretmanager.admin` - Full access to secrets
+- `roles/secretmanager.secretVersionManager` - Can create/destroy versions
+- `roles/secretmanager.secretVersionAdder` - Can add new versions
 
 ### Examples
 

@@ -55,9 +55,9 @@ See the audit-logging documentation for setup instructions.
 Examples:
   gsecutil auditlog                    # Show all Secret Manager audit logs
   gsecutil auditlog my-secret          # Show logs for secrets containing "my-secret"
-  gsecutil auditlog --user john        # Show logs for user containing "john"
-  gsecutil auditlog --operations ACCESS,CREATE    # Show only ACCESS and CREATE operations
-  gsecutil auditlog db --user admin --operations UPDATE    # Specific filters combined`,
+  gsecutil auditlog --principal john   # Show logs for user containing "john"
+  gsecutil auditlog --operation ACCESS,CREATE    # Show only ACCESS and CREATE operations
+  gsecutil auditlog db --principal admin --operation UPDATE    # Specific filters combined`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Get command arguments and flags
@@ -70,20 +70,20 @@ Examples:
 		days, _ := cmd.Flags().GetInt("days")
 		limit, _ := cmd.Flags().GetInt("limit")
 		format, _ := cmd.Flags().GetString("format")
-		userFilter, _ := cmd.Flags().GetString("user")
-		operationsFilter, _ := cmd.Flags().GetString("operations")
+		principalFilter, _ := cmd.Flags().GetString("principal")
+		operationFilter, _ := cmd.Flags().GetString("operation")
 
-		return runAuditLogQuery(project, secretName, userFilter, operationsFilter, days, limit, format)
+		return runAuditLogQuery(project, secretName, principalFilter, operationFilter, days, limit, format)
 	},
 }
 
 // runAuditLogQuery executes the audit log query with filtering
-func runAuditLogQuery(project, secretName, userFilter, operationsFilter string, days, limit int, format string) error {
-	// Parse operations filter
-	operations := parseOperationsFilter(operationsFilter)
+func runAuditLogQuery(project, secretName, principalFilter, operationFilter string, days, limit int, format string) error {
+	// Parse operation filter
+	operations := parseOperationFilter(operationFilter)
 
 	// Build the filter for Secret Manager audit logs
-	filter := buildLogFilter(secretName, userFilter, days)
+	filter := buildLogFilter(secretName, principalFilter, days)
 
 	// Execute gcloud logging command
 	logEntries, err := executeLogQuery(project, filter, limit)
@@ -92,19 +92,19 @@ func runAuditLogQuery(project, secretName, userFilter, operationsFilter string, 
 	}
 
 	// Filter entries if needed (for partial matching that gcloud filter can't handle well)
-	filteredEntries := filterLogEntries(logEntries, secretName, userFilter, operations)
+	filteredEntries := filterLogEntries(logEntries, secretName, principalFilter, operations)
 
 	if len(filteredEntries) == 0 {
-		printNoResultsMessage(secretName, userFilter, operationsFilter, days)
+		printNoResultsMessage(secretName, principalFilter, operationFilter, days)
 		return nil
 	}
 
 	// Display results
-	return displayLogEntries(filteredEntries, secretName, userFilter, operationsFilter, days, format)
+	return displayLogEntries(filteredEntries, secretName, principalFilter, operationFilter, days, format)
 }
 
 // buildLogFilter constructs the gcloud logging filter query
-func buildLogFilter(secretName, userFilter string, days int) string {
+func buildLogFilter(secretName, principalFilter string, days int) string {
 	// Base filter for Secret Manager service
 	filter := `protoPayload.serviceName="secretmanager.googleapis.com"`
 
@@ -121,9 +121,9 @@ func buildLogFilter(secretName, userFilter string, days int) string {
 )`, secretName, secretName, secretName)
 	}
 
-	// Add user filter if provided (basic filter, we'll do more precise filtering in post-processing)
-	if userFilter != "" {
-		filter += fmt.Sprintf(` AND protoPayload.authenticationInfo.principalEmail:"%s"`, userFilter)
+	// Add principal filter if provided (basic filter, we'll do more precise filtering in post-processing)
+	if principalFilter != "" {
+		filter += fmt.Sprintf(` AND protoPayload.authenticationInfo.principalEmail:"%s"`, principalFilter)
 	}
 
 	return filter
@@ -161,14 +161,14 @@ func executeLogQuery(project, filter string, limit int) ([]AuditLogEntry, error)
 	return logEntries, nil
 }
 
-// parseOperationsFilter parses the comma-separated operations filter into a slice
-func parseOperationsFilter(operationsFilter string) []string {
-	if operationsFilter == "" {
+// parseOperationFilter parses the comma-separated operation filter into a slice
+func parseOperationFilter(operationFilter string) []string {
+	if operationFilter == "" {
 		return nil
 	}
 
 	// Split by comma and trim whitespace
-	parts := strings.Split(operationsFilter, ",")
+	parts := strings.Split(operationFilter, ",")
 	var operations []string
 	var invalidOps []string
 
@@ -209,7 +209,7 @@ func isValidOperation(operation string) bool {
 }
 
 // filterLogEntries performs post-processing filtering for partial matches and secret relevance
-func filterLogEntries(entries []AuditLogEntry, secretName, userFilter string, operations []string) []AuditLogEntry {
+func filterLogEntries(entries []AuditLogEntry, secretName, principalFilter string, operations []string) []AuditLogEntry {
 	var filtered []AuditLogEntry
 
 	for _, entry := range entries {
@@ -241,10 +241,10 @@ func filterLogEntries(entries []AuditLogEntry, secretName, userFilter string, op
 			}
 		}
 
-		// Check user partial match if specified
-		if userFilter != "" {
-			user := entry.ProtoPayload.AuthenticationInfo.PrincipalEmail
-			if user == "" || !strings.Contains(strings.ToLower(user), strings.ToLower(userFilter)) {
+		// Check principal partial match if specified
+		if principalFilter != "" {
+			principal := entry.ProtoPayload.AuthenticationInfo.PrincipalEmail
+			if principal == "" || !strings.Contains(strings.ToLower(principal), strings.ToLower(principalFilter)) {
 				continue
 			}
 		}
@@ -317,16 +317,16 @@ func isSecretRelatedOperation(entry AuditLogEntry) bool {
 }
 
 // printNoResultsMessage displays appropriate message when no results are found
-func printNoResultsMessage(secretName, userFilter, operationsFilter string, days int) {
+func printNoResultsMessage(secretName, principalFilter, operationFilter string, days int) {
 	filters := []string{}
 	if secretName != "" {
 		filters = append(filters, fmt.Sprintf("secrets matching '%s'", secretName))
 	}
-	if userFilter != "" {
-		filters = append(filters, fmt.Sprintf("user matching '%s'", userFilter))
+	if principalFilter != "" {
+		filters = append(filters, fmt.Sprintf("principal matching '%s'", principalFilter))
 	}
-	if operationsFilter != "" {
-		filters = append(filters, fmt.Sprintf("operations '%s'", operationsFilter))
+	if operationFilter != "" {
+		filters = append(filters, fmt.Sprintf("operations '%s'", operationFilter))
 	}
 
 	if len(filters) > 0 {
@@ -338,7 +338,7 @@ func printNoResultsMessage(secretName, userFilter, operationsFilter string, days
 }
 
 // displayLogEntries formats and displays the log entries
-func displayLogEntries(entries []AuditLogEntry, secretName, userFilter, operationsFilter string, days int, format string) error {
+func displayLogEntries(entries []AuditLogEntry, secretName, principalFilter, operationFilter string, days int, format string) error {
 	// Display results based on format
 	if format == "json" {
 		jsonOutput, err := json.MarshalIndent(entries, "", "  ")
@@ -350,7 +350,7 @@ func displayLogEntries(entries []AuditLogEntry, secretName, userFilter, operatio
 	}
 
 	// Default table format
-	printTableHeader(secretName, userFilter, operationsFilter, days)
+	printTableHeader(secretName, principalFilter, operationFilter, days)
 
 	for _, entry := range entries {
 		timestamp := entry.Timestamp.Format("2006-01-02 15:04:05")
@@ -385,16 +385,16 @@ func displayLogEntries(entries []AuditLogEntry, secretName, userFilter, operatio
 }
 
 // printTableHeader prints the appropriate table header based on filters
-func printTableHeader(secretName, userFilter, operationsFilter string, days int) {
+func printTableHeader(secretName, principalFilter, operationFilter string, days int) {
 	filters := []string{}
 	if secretName != "" {
 		filters = append(filters, fmt.Sprintf("secret '%s'", secretName))
 	}
-	if userFilter != "" {
-		filters = append(filters, fmt.Sprintf("user '%s'", userFilter))
+	if principalFilter != "" {
+		filters = append(filters, fmt.Sprintf("principal '%s'", principalFilter))
 	}
-	if operationsFilter != "" {
-		filters = append(filters, fmt.Sprintf("operations '%s'", operationsFilter))
+	if operationFilter != "" {
+		filters = append(filters, fmt.Sprintf("operations '%s'", operationFilter))
 	}
 
 	if len(filters) > 0 {
@@ -445,6 +445,6 @@ func init() {
 	auditlogCmd.Flags().IntP("days", "d", 7, "Number of days to look back for audit logs")
 	auditlogCmd.Flags().IntP("limit", "l", 50, "Maximum number of log entries to retrieve")
 	auditlogCmd.Flags().String("format", "", "Output format (table, json)")
-	auditlogCmd.Flags().StringP("user", "u", "", "Filter by username (supports partial matching)")
-	auditlogCmd.Flags().StringP("operations", "o", "", "Filter by operations (comma-separated): ACCESS,CREATE,UPDATE,DELETE,GET_METADATA,LIST,UPDATE_METADATA,DESTROY_VERSION,DISABLE_VERSION,ENABLE_VERSION")
+	auditlogCmd.Flags().String("principal", "", "Filter by principal/user (supports partial matching)")
+	auditlogCmd.Flags().StringP("operation", "o", "", "Filter by operations (comma-separated): ACCESS,CREATE,UPDATE,DELETE,GET_METADATA,LIST,UPDATE_METADATA,DESTROY_VERSION,DISABLE_VERSION,ENABLE_VERSION")
 }

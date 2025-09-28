@@ -6,8 +6,8 @@ import (
 	"time"
 )
 
-// TestParseOperationsFilter tests the parsing of operations filter
-func TestParseOperationsFilter(t *testing.T) {
+// TestParseOperationFilter tests the parsing of operation filter
+func TestParseOperationFilter(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    string
@@ -57,14 +57,14 @@ func TestParseOperationsFilter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := parseOperationsFilter(tt.input)
+			result := parseOperationFilter(tt.input)
 			if len(result) != len(tt.expected) {
-				t.Errorf("parseOperationsFilter(%q) returned %d items, expected %d", tt.input, len(result), len(tt.expected))
+				t.Errorf("parseOperationFilter(%q) returned %d items, expected %d", tt.input, len(result), len(tt.expected))
 				return
 			}
 			for i, expected := range tt.expected {
 				if result[i] != expected {
-					t.Errorf("parseOperationsFilter(%q)[%d] = %q, expected %q", tt.input, i, result[i], expected)
+					t.Errorf("parseOperationFilter(%q)[%d] = %q, expected %q", tt.input, i, result[i], expected)
 				}
 			}
 		})

@@ -20,13 +20,20 @@ Examples:
   gsecutil list                     # List all secrets with labels
   gsecutil list --no-labels         # List secrets without labels
   gsecutil list --format json       # Raw JSON output
-  gsecutil list --filter "labels.env=prod"  # Filter by label`,
+  gsecutil list --filter "labels.env=prod"  # Filter by label
+  gsecutil list --principal user:alice@example.com  # List secrets accessible by a principal`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		project, _ := cmd.Flags().GetString("project")
 		filter, _ := cmd.Flags().GetString("filter")
 		format, _ := cmd.Flags().GetString("format")
 		limit, _ := cmd.Flags().GetInt("limit")
 		noLabels, _ := cmd.Flags().GetBool("no-labels")
+		principal, _ := cmd.Flags().GetString("principal")
+
+		// If principal is specified, list secrets accessible by that principal
+		if principal != "" {
+			return listSecretsForPrincipal(principal, project, !noLabels)
+		}
 
 		// If user specified a custom format, use the original gcloud passthrough approach
 		if format != "" && format != "table" {
@@ -224,10 +231,196 @@ func formatLabels(labels map[string]string) string {
 	return strings.Join(labelPairs, ",")
 }
 
+// listSecretsForPrincipal lists all secrets that a principal has access to
+func listSecretsForPrincipal(principal, project string, showLabels bool) error {
+	// Validate the principal format
+	if err := validatePrincipalFormat(principal); err != nil {
+		return err
+	}
+
+	// First, get all secrets in the project
+	gcloudArgs := []string{"secrets", "list", "--format", "json"}
+	if project != "" {
+		gcloudArgs = append(gcloudArgs, "--project", project)
+	}
+
+	// Execute gcloud command to get all secrets
+	gcloudCmd := exec.Command("gcloud", gcloudArgs...)
+	output, err := gcloudCmd.Output()
+	if err != nil {
+		if exitError, ok := err.(*exec.ExitError); ok {
+			return fmt.Errorf("gcloud command failed: %s", string(exitError.Stderr))
+		}
+		return fmt.Errorf("failed to execute gcloud command: %v", err)
+	}
+
+	// Parse JSON response
+	var allSecrets []SecretInfo
+	if err := json.Unmarshal(output, &allSecrets); err != nil {
+		return fmt.Errorf("failed to parse secrets list: %w", err)
+	}
+
+	if len(allSecrets) == 0 {
+		fmt.Printf("No secrets found in the project.\n")
+		return nil
+	}
+
+	// Filter secrets that the principal has access to
+	var accessibleSecrets []SecretInfo
+	for _, secret := range allSecrets {
+		secretName := extractSecretName(secret.Name)
+		hasAccess, err := checkPrincipalAccess(secretName, principal, project)
+		if err != nil {
+			// Log warning but continue with other secrets
+			fmt.Printf("Warning: Could not check access for secret '%s': %v\n", secretName, err)
+			continue
+		}
+		if hasAccess {
+			accessibleSecrets = append(accessibleSecrets, secret)
+		}
+	}
+
+	if len(accessibleSecrets) == 0 {
+		fmt.Printf("No secrets found that '%s' has access to.\n", principal)
+		fmt.Println("Note: This checks both secret-level and project-level IAM permissions.")
+		return nil
+	}
+
+	// Sort secrets by name for consistent output
+	sort.Slice(accessibleSecrets, func(i, j int) bool {
+		return accessibleSecrets[i].Name < accessibleSecrets[j].Name
+	})
+
+	fmt.Printf("Secrets accessible by '%s':\n\n", principal)
+
+	// Display accessible secrets
+	if showLabels {
+		displaySecretsWithLabels(accessibleSecrets)
+	} else {
+		displaySecretsSimple(accessibleSecrets)
+	}
+
+	return nil
+}
+
+// checkPrincipalAccess checks if a principal has access to a specific secret
+func checkPrincipalAccess(secretName, principal, project string) (bool, error) {
+	// First check secret-level permissions
+	hasSecretAccess, err := checkSecretLevelAccess(secretName, principal, project)
+	if err != nil {
+		return false, err
+	}
+	if hasSecretAccess {
+		return true, nil
+	}
+
+	// Then check project-level permissions
+	hasProjectAccess, err := checkProjectLevelAccess(principal, project)
+	if err != nil {
+		return false, err
+	}
+
+	return hasProjectAccess, nil
+}
+
+// checkSecretLevelAccess checks if a principal has secret-level access
+func checkSecretLevelAccess(secretName, principal, project string) (bool, error) {
+	// Get IAM policy for the secret
+	gcloudArgs := []string{"secrets", "get-iam-policy", secretName, "--format", "json"}
+	if project != "" {
+		gcloudArgs = append(gcloudArgs, "--project", project)
+	}
+
+	// Execute gcloud command
+	gcloudCmd := exec.Command("gcloud", gcloudArgs...)
+	output, err := gcloudCmd.Output()
+	if err != nil {
+		// If we can't get the policy, assume no access
+		return false, nil
+	}
+
+	// Parse JSON response
+	var policy IAMPolicy
+	if err := json.Unmarshal(output, &policy); err != nil {
+		return false, err
+	}
+
+	// Check if the principal is in any of the bindings
+	for _, binding := range policy.Bindings {
+		for _, member := range binding.Members {
+			if member == principal {
+				return true, nil
+			}
+		}
+	}
+
+	return false, nil
+}
+
+// checkProjectLevelAccess checks if a principal has project-level Secret Manager access
+func checkProjectLevelAccess(principal, project string) (bool, error) {
+	projectID := getProjectID(project)
+
+	// Get project IAM policy
+	gcloudArgs := []string{"projects", "get-iam-policy", projectID, "--format", "json"}
+
+	// Execute gcloud command
+	gcloudCmd := exec.Command("gcloud", gcloudArgs...)
+	output, err := gcloudCmd.Output()
+	if err != nil {
+		// If we can't get the project policy, assume no access
+		return false, nil
+	}
+
+	// Parse JSON response
+	var policy IAMPolicy
+	if err := json.Unmarshal(output, &policy); err != nil {
+		return false, err
+	}
+
+	// Define roles that provide Secret Manager access
+	secretManagerRoles := map[string]bool{
+		"roles/secretmanager.admin":                true,
+		"roles/secretmanager.secretAccessor":       true,
+		"roles/secretmanager.viewer":               true,
+		"roles/secretmanager.secretVersionManager": true,
+		"roles/secretmanager.secretVersionAdder":   true,
+		"roles/editor":                             true,
+		"roles/owner":                              true,
+	}
+
+	// Check if the principal has any Secret Manager roles at project level
+	for _, binding := range policy.Bindings {
+		if secretManagerRoles[binding.Role] {
+			for _, member := range binding.Members {
+				if member == principal {
+					return true, nil
+				}
+			}
+		}
+	}
+
+	return false, nil
+}
+
+// validatePrincipalFormat validates the format of a principal (used in list command)
+func validatePrincipalFormat(principal string) error {
+	validPrefixes := []string{"user:", "group:", "serviceAccount:", "domain:", "allUsers", "allAuthenticatedUsers"}
+
+	for _, prefix := range validPrefixes {
+		if strings.HasPrefix(principal, prefix) {
+			return nil
+		}
+	}
+
+	return fmt.Errorf("invalid principal format: %s\nValid formats: user:email@domain.com, group:group@domain.com, serviceAccount:sa@project.iam.gserviceaccount.com, domain:domain.com, allUsers, allAuthenticatedUsers", principal)
+}
+
 func init() {
 	rootCmd.AddCommand(listCmd)
 	listCmd.Flags().String("filter", "", "Filter expression to apply to the list")
 	listCmd.Flags().String("format", "", "Output format (e.g., table, json, yaml) - custom formats bypass label display")
 	listCmd.Flags().Int("limit", 0, "Maximum number of secrets to list (0 for no limit)")
 	listCmd.Flags().Bool("no-labels", false, "Hide labels in output")
+	listCmd.Flags().String("principal", "", "List secrets accessible by this principal (format: user:email@domain.com, group:group@domain.com, etc.)")
 }
