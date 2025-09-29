@@ -574,9 +574,13 @@ func init() {
 	// Flags for grant and revoke commands
 	accessGrantCmd.Flags().String("principal", "", "Principal to grant access to (required) - format: user:email@domain.com, group:group@domain.com, etc.")
 	accessGrantCmd.Flags().String("role", "roles/secretmanager.secretAccessor", "Role to grant (default: roles/secretmanager.secretAccessor)")
-	accessGrantCmd.MarkFlagRequired("principal")
+	if err := accessGrantCmd.MarkFlagRequired("principal"); err != nil {
+		panic(fmt.Sprintf("Failed to mark principal flag as required for grant command: %v", err))
+	}
 
 	accessRevokeCmd.Flags().String("principal", "", "Principal to revoke access from (required) - format: user:email@domain.com, group:group@domain.com, etc.")
 	accessRevokeCmd.Flags().String("role", "roles/secretmanager.secretAccessor", "Role to revoke (default: roles/secretmanager.secretAccessor)")
-	accessRevokeCmd.MarkFlagRequired("principal")
+	if err := accessRevokeCmd.MarkFlagRequired("principal"); err != nil {
+		panic(fmt.Sprintf("Failed to mark principal flag as required for revoke command: %v", err))
+	}
 }
