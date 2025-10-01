@@ -29,8 +29,8 @@ This README is available in multiple languages:
 
 Many password managers are designed for personal use or require expensive team subscriptions. `gsecutil` leverages Google Cloud's Secret Manager, which offers:
 
-- **Free tier**: Up to 6 active secret versions per month at no cost
-- **Pay-as-you-use**: Only pay for what you store and access beyond the free tier
+- **Free tier**: Up to 6 active secret versions and 10,000 access operations per month at no cost
+- **Pay-as-you-use**: Only pay for what you store and access beyond the free tier (\$0.06 per additional active version)
 - **No per-user licensing**: Share access among team members without per-seat costs
 
 ### ⚠️ What gsecutil is NOT
