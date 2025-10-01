@@ -1,34 +1,70 @@
 # gsecutil - Google Secret Manager Utility
 
-🚀 **v1.0.0** - A comprehensive command-line utility for Google Secret Manager administration. `gsecutil` provides a complete suite of tools for secret management, access control, and compliance auditing with advanced IAM policy analysis and project-level permission management.
+🚀 **v1.0.0** - A simplified command-line wrapper for Google Secret Manager. `gsecutil` provides convenient commands for common secret operations, making it easier for small teams to manage passwords and credentials using Google Cloud's Secret Manager without needing a dedicated password management tool.
 
-## ✨ Features
+## 🌍 Language Versions
 
-### 🔐 **Complete Secret Management**
-- **CRUD operations**: Create, read, update, delete secrets with simplified commands
-- **Version management**: Access any version, view version history and metadata
+This README is available in multiple languages:
+
+- **English** - [README.md](README.md) (current)
+- **日本語** - [README.ja.md](README.ja.md)
+- **中文** - [README.zh.md](README.zh.md)
+- **Español** - [README.es.md](README.es.md)
+- **हिंदी** - [README.hi.md](README.hi.md)
+- **Português** - [README.pt.md](README.pt.md)
+
+> **Note**: All non-English versions are machine-translated. For the most accurate and up-to-date information, please refer to the English version.
+
+## 🎯 Who is this for?
+
+`gsecutil` is designed for **small teams** who:
+
+- ✅ Already use Google Cloud services
+- ✅ Need to share passwords/credentials among team members
+- ✅ Want something better than shared spreadsheets or plain text files
+- ✅ Cannot afford dedicated password management tools
+- ✅ Are comfortable with command-line tools
+
+### 💰 Cost-effective solution
+
+Many password managers are designed for personal use or require expensive team subscriptions. `gsecutil` leverages Google Cloud's Secret Manager, which offers:
+
+- **Free tier**: Up to 6 active secret versions per month at no cost
+- **Pay-as-you-use**: Only pay for what you store and access beyond the free tier
+- **No per-user licensing**: Share access among team members without per-seat costs
+
+### ⚠️ What gsecutil is NOT
+
+- **Not a full-featured password manager** - lacks browser extensions, auto-fill, password generation, etc.
+- **Not a replacement for enterprise tools** - missing advanced features like SCIM provisioning, detailed reporting, etc.
+- **Not suitable for personal use** - requires Google Cloud setup and is overkill for individual users
+- **Not a complete Secret Manager interface** - only covers common use cases, not all Google Secret Manager features
+
+## ✨ What gsecutil offers
+
+### 🔐 **Basic Secret Operations**
+- **Simple CRUD commands**: Create, read, update, delete secrets with easy-to-remember commands
+- **Version access**: Get specific versions of secrets when needed
 - **Cross-platform** support (Linux, macOS, Windows with ARM64 support)
-- **Clipboard integration** - copy secret values directly to clipboard
-- **Interactive & file input** - secure prompts or file-based secret loading
+- **Clipboard integration** - copy secret values directly to clipboard for convenience
+- **Multiple input methods** - interactive prompts, inline data, or file-based loading
 
-### 🛡️ **Advanced Access Management** *(NEW in v1.0.0)*
-- **Complete IAM policy analysis** - view who has access to secrets at any level
-- **Multi-level permission checking** - secret-level and project-level access analysis
-- **IAM condition awareness** - full support for conditional access policies with CEL expressions
-- **Principal management** - grant/revoke access for users, groups, and service accounts
-- **Project-wide analysis** - identify Editor/Owner roles providing Secret Manager access
+### 🛡️ **Basic Access Management** *(NEW in v1.0.0)*
+- **IAM policy viewing** - see who has access to secrets
+- **Permission checking** - understand access at secret and project levels
+- **Simple access control** - grant/revoke access for users, groups, and service accounts
+- **Basic IAM analysis** - identify common access patterns
 
-### 📊 **Audit & Compliance**
-- **Comprehensive audit logging** - track who accessed secrets, when, and what operations
-- **Principal-based filtering** - see all secrets accessible by specific users/groups
-- **Flexible filtering** - by secret, principal, operation type, time range
-- **Condition evaluation** - understand when conditional access applies
+### 📊 **Audit Log Access**
+- **Audit log viewing** - see who accessed secrets and when
+- **Basic filtering** - filter by secret name, user, or operation type
+- **Simple reporting** - basic audit trail for security review
 
-### 🎯 **Production-Ready**
-- **Consistent API** - unified parameter naming across all commands
-- **Enterprise features** - IAM conditions, project-level analysis, compliance auditing
-- **Robust error handling** - graceful handling of missing permissions and network issues
-- **Flexible output** - JSON, YAML, table formats with rich formatting
+### 🎯 **Team-Friendly**
+- **Consistent commands** - unified approach across all operations
+- **Good error messages** - helpful feedback when things go wrong
+- **Multiple output formats** - JSON, YAML, or human-readable table output
+- **Free to use** - leverages Google Cloud's free tier for small teams
 
 ## Prerequisites
 
@@ -196,20 +232,20 @@ gsecutil list --limit 10
 
 #### Describe Secret
 
-Get comprehensive information about a secret including metadata, labels, tags, default version, and replication strategy:
+Get information about a secret including metadata, labels, default version, and other details:
 
 ```bash
-# Describe secret with comprehensive information
+# Describe secret with basic information
 gsecutil describe my-secret
 
-# Describe with detailed information about all versions
+# Describe with information about all versions
 gsecutil describe my-secret --show-versions
 
 # Describe with JSON output (raw gcloud format)
 gsecutil describe my-secret --format json
 ```
 
-**Enhanced Information Displayed:**
+**Information Displayed:**
 - Basic metadata (name, creation time, ETag)
 - **Default version** (current active version, state, creation time)
 - **Replication strategy** (automatic multi-region or user-managed)
@@ -275,13 +311,13 @@ gsecutil auditlog --limit 20
 
 #### Access Management *(NEW in v1.0.0)*
 
-Manage IAM access permissions for secrets with comprehensive policy analysis:
+Basic IAM access management for secrets:
 
 ```bash
-# List all principals with access to a secret
+# List principals with access to a secret
 gsecutil access list my-secret
 
-# Include project-level permissions in the analysis
+# Include project-level permissions in the check
 gsecutil access list my-secret --include-project
 
 # Grant access to a user
@@ -298,16 +334,16 @@ gsecutil access revoke my-secret --principal user:bob@example.com
 # Show project-level Secret Manager permissions
 gsecutil access project
 
-# List all secrets a user can access
+# List secrets a user can access
 gsecutil list --principal user:alice@example.com
 ```
 
-**Key Access Management Features:**
-- **Multi-level analysis**: Checks both secret-level and project-level IAM policies
-- **IAM condition support**: Shows conditional access with CEL expressions, titles, and descriptions
-- **Principal types**: Users, groups, service accounts, domains, allUsers, allAuthenticatedUsers
-- **Role management**: Grant/revoke with automatic role validation
-- **Project-wide visibility**: Identify Editor/Owner roles providing Secret Manager access
+**Access Management Features:**
+- **Basic policy checking**: Shows who has access to secrets
+- **IAM condition display**: Shows conditional access rules (when present)
+- **Common principal types**: Users, groups, service accounts
+- **Simple role management**: Grant/revoke access with common Secret Manager roles
+- **Project-level awareness**: Shows broader permissions that might affect secrets
 
 **Available Roles:**
 - `roles/secretmanager.secretAccessor` - Can access secret values (default)
@@ -476,51 +512,6 @@ gcloud config set project YOUR_PROJECT_ID
 gcloud auth activate-service-account --key-file=service-account.json
 ```
 
-## Building from Source
-
-For comprehensive build instructions including cross-platform builds, CI/CD integration, and troubleshooting, see **[BUILD.md](BUILD.md)**.
-
-### Quick Development Setup
-
-```bash
-# Clone and build
-git clone https://github.com/superdaigo/gsecutil.git
-cd gsecutil
-
-# Install dependencies and build
-make deps && make build
-
-# Run tests and validation
-make test && make vet && make fmt
-
-# Quick development build and test
-make dev
-```
-
-### Build Methods
-
-1. **Makefile** (Linux/macOS/WSL): `make build`
-2. **Bash Script** (Linux/macOS): `./build.sh`
-3. **PowerShell Script** (Windows): `.\build.ps1`
-4. **Manual Go**: `go build -o build/gsecutil .`
-
-## System Requirements
-
-### Runtime Requirements
-
-- **Google Cloud SDK**: `gcloud` CLI installed and in PATH
-- **Authentication**: Google Cloud SDK authenticated (`gcloud auth login`)
-- **API Access**: Secret Manager API enabled in your Google Cloud project
-- **Permissions**: Appropriate IAM roles (see [Troubleshooting](#troubleshooting))
-
-### Build Requirements
-
-- **Go**: Version 1.21 or later
-- **Make**: Optional, for using Makefile (Linux/macOS/WSL)
-- **Git**: For cloning the repository
-
-See [BUILD.md](BUILD.md) for detailed build instructions.
-
 ## Security & Best Practices
 
 ### Security Features
@@ -570,62 +561,13 @@ export CLOUDSDK_CORE_VERBOSITY=debug
 ## Documentation
 
 - **[BUILD.md](BUILD.md)** - Comprehensive build instructions for all platforms
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Contributing guidelines and development workflow
 - **[WARP.md](WARP.md)** - Development guidance for WARP AI terminal integration
 - **README.md** - This file, usage and overview
 
 ## Contributing
 
-Contributions are welcome! Please follow these steps:
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. **Install pre-commit hooks** (see below)
-4. Make your changes
-5. Add tests if applicable
-6. Commit your changes: `git commit -am 'Add amazing feature'` (pre-commit hooks will run automatically)
-7. Push to the branch: `git push origin feature/amazing-feature`
-8. Submit a pull request
-
-### Pre-commit Hooks
-
-This project uses [pre-commit](https://pre-commit.com/) to ensure code quality. The hooks automatically run on every commit:
-
-**Setup:**
-```bash
-# Install pre-commit (Ubuntu/Debian)
-sudo apt install pre-commit
-
-# Install hooks in your local repository
-pre-commit install
-
-# Run hooks manually on all files (optional)
-pre-commit run --all-files
-```
-
-**What the hooks do:**
-- **Format code**: `go fmt`
-- **Static analysis**: `go vet`
-- **Dependency management**: `go mod tidy`
-- **Run tests**: `go test ./cmd`
-- **File checks**: Remove trailing whitespace, fix line endings, etc.
-
-The hooks will run automatically on `git commit`. If any hook fails, the commit will be blocked until issues are fixed.
-
-### Development Workflow
-
-```bash
-# Setup development environment
-make deps
-
-# Install pre-commit hooks (first time only)
-pre-commit install
-
-# Make your changes, then:
-make fmt vet test     # Manual quality checks (optional - pre-commit handles this)
-make dev             # Quick build and test
-```
-
-See [BUILD.md](BUILD.md) for detailed development and build instructions.
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines on how to contribute to this project, including setup instructions for development environment and pre-commit hooks.
 
 ## License
 
