@@ -249,10 +249,11 @@ gsecutil list --principal user:alice@example.com
 ```
 
 **Configuration Features** *(NEW in v1.1.0)*:
-- **--show-attributes**: Display custom attributes from configuration file
+- **--show-attributes**: Display custom attributes from configuration file (inserted after NAME, before built-in fields like LABELS and CREATED)
 - **--filter-attributes**: Filter secrets by configuration attributes
 - **Automatic attribute display**: Shows default attributes when configuration file is present
 - **Prefix filtering**: Automatically filters by configured prefix
+- **Built-in field preservation**: Secret Manager built-in fields (LABELS, CREATED) are always shown alongside custom attributes
 
 #### Describe Secret
 
@@ -574,7 +575,7 @@ credentials:
 
 - **Team Documentation**: Add titles, descriptions, owners, and custom metadata
 - **Prefix Management**: Automatically handle team prefixes (e.g., `team-shared-database-password`)
-- **Enhanced List Output**: Show custom attributes instead of just secret names
+- **Enhanced List Output**: Show custom attributes alongside built-in Secret Manager fields
 - **Filtering**: Filter by configuration attributes (`--filter-attributes "environment=prod"`)
 - **Shared Configuration**: Commit config files to version control for team sharing
 
@@ -584,11 +585,11 @@ credentials:
 # User types short name, gsecutil adds prefix automatically
 gsecutil get database-password  # Actually accesses "team-shared-database-password"
 
-# List shows custom attributes from config
+# List shows custom attributes from config alongside built-in fields
 gsecutil list
-# NAME                           TITLE                        OWNER         ENVIRONMENT
-# team-shared-database-password  Production Database Password backend-team  production
-# team-shared-api-key           External API Key             api-team      production
+# NAME                           TITLE                        OWNER         ENVIRONMENT  LABELS         CREATED
+# team-shared-database-password  Production Database Password backend-team  production   env=prod       2023-06-15
+# team-shared-api-key           External API Key             api-team      production   env=staging    2023-07-20
 
 # Describe shows config attributes along with Google Secret Manager metadata
 gsecutil describe database-password

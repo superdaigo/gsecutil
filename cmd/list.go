@@ -17,13 +17,17 @@ var listCmd = &cobra.Command{
 You can filter results and control the output format. Supports configuration-based
 attribute display and filtering.
 
+When using --show-attributes or list.attributes config, the specified custom attributes
+are inserted after the NAME column, followed by built-in fields (LABELS, CREATED).
+Built-in Secret Manager fields are always preserved and shown.
+
 Examples:
   gsecutil list                     # List secrets with default attributes from config
   gsecutil list --no-labels         # List secrets without labels
   gsecutil list --format json       # Raw JSON output
   gsecutil list --filter "labels.env=prod"  # Filter by Secret Manager labels
   gsecutil list --filter-attributes "environment=prod"  # Filter by config attributes
-  gsecutil list --show-attributes "title,owner,environment"  # Show specific attributes
+  gsecutil list --show-attributes "title,owner,environment"  # Show: NAME + custom attributes + LABELS + CREATED
   gsecutil list --principal user:alice@example.com  # List secrets accessible by a principal`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		project, _ := cmd.Flags().GetString("project")
@@ -597,9 +601,12 @@ func listSecretsWithConfigFiltering(project, filter string, limit int, filterAtt
 }
 
 // displaySecretsWithConfigAttributes displays secrets with configuration-based attributes
+// Built-in fields (LABELS, CREATED) are always shown, custom attributes are inserted after NAME
 func displaySecretsWithConfigAttributes(secrets []SecretInfo, attributes []string) {
-	// Calculate column widths
-	maxNameWidth := 4 // "NAME"
+	// Calculate column widths for built-in fields
+	maxNameWidth := 4    // "NAME"
+	maxLabelsWidth := 6  // "LABELS"
+	maxCreatedWidth := 7 // "CREATED"
 	attributeWidths := make([]int, len(attributes))
 
 	// Initialize attribute widths with header names
@@ -612,6 +619,18 @@ func displaySecretsWithConfigAttributes(secrets []SecretInfo, attributes []strin
 		secretName := extractSecretName(secret.Name)
 		if len(secretName) > maxNameWidth {
 			maxNameWidth = len(secretName)
+		}
+
+		// Calculate labels width
+		labelsStr := formatLabels(secret.Labels)
+		if len(labelsStr) > maxLabelsWidth {
+			maxLabelsWidth = len(labelsStr)
+		}
+
+		// Calculate created width
+		createdStr := secret.CreateTime.Format("2006-01-02")
+		if len(createdStr) > maxCreatedWidth {
+			maxCreatedWidth = len(createdStr)
 		}
 
 		// Convert secret name to user input name for config lookup
@@ -629,11 +648,12 @@ func displaySecretsWithConfigAttributes(secrets []SecretInfo, attributes []strin
 		}
 	}
 
-	// Print header
+	// Print header: NAME + custom attributes + built-in fields
 	header := fmt.Sprintf("%-*s", maxNameWidth, "NAME")
 	for i, attr := range attributes {
 		header += fmt.Sprintf("  %-*s", attributeWidths[i], strings.ToUpper(attr))
 	}
+	header += fmt.Sprintf("  %-*s  %-*s", maxLabelsWidth, "LABELS", maxCreatedWidth, "CREATED")
 	fmt.Println(header)
 
 	// Print separator
@@ -641,9 +661,10 @@ func displaySecretsWithConfigAttributes(secrets []SecretInfo, attributes []strin
 	for _, width := range attributeWidths {
 		separator += "  " + strings.Repeat("-", width)
 	}
+	separator += "  " + strings.Repeat("-", maxLabelsWidth) + "  " + strings.Repeat("-", maxCreatedWidth)
 	fmt.Println(separator)
 
-	// Print secrets
+	// Print secrets: NAME + custom attributes + built-in fields
 	for _, secret := range secrets {
 		secretName := extractSecretName(secret.Name)
 
@@ -655,11 +676,20 @@ func displaySecretsWithConfigAttributes(secrets []SecretInfo, attributes []strin
 
 		cred := GetCredentialInfo(userInputName)
 
+		// Start with NAME
 		row := fmt.Sprintf("%-*s", maxNameWidth, secretName)
+
+		// Add custom attributes
 		for i, attr := range attributes {
 			value := GetAttributeValue(cred, attr)
 			row += fmt.Sprintf("  %-*s", attributeWidths[i], value)
 		}
+
+		// Add built-in fields
+		labelsStr := formatLabels(secret.Labels)
+		createdStr := secret.CreateTime.Format("2006-01-02")
+		row += fmt.Sprintf("  %-*s  %-*s", maxLabelsWidth, labelsStr, maxCreatedWidth, createdStr)
+
 		fmt.Println(row)
 	}
 }
@@ -668,7 +698,7 @@ func init() {
 	rootCmd.AddCommand(listCmd)
 	listCmd.Flags().String("filter", "", "Filter expression to apply to Secret Manager labels")
 	listCmd.Flags().String("filter-attributes", "", "Filter by configuration file attributes (format: key=value,key2=value2)")
-	listCmd.Flags().String("show-attributes", "", "Comma-separated list of attributes to display from configuration file")
+	listCmd.Flags().String("show-attributes", "", "Comma-separated list of attributes to display from configuration file (inserted after NAME, before built-in fields)")
 	listCmd.Flags().String("format", "", "Output format (e.g., table, json, yaml) - custom formats bypass attribute display")
 	listCmd.Flags().Int("limit", 0, "Maximum number of secrets to list (0 for no limit)")
 	listCmd.Flags().Bool("no-labels", false, "Hide labels in output")
