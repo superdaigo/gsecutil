@@ -4,7 +4,7 @@
 >
 > **🆕 新功能**: v1.1.1添加了自动版本管理功能，以保持在Google Cloud免费层（6个活动版本）内。详情请参阅英语 README。
 
-🚀 **v1.1.0** - 带有配置文件支持的Google Secret Manager简化命令行包装器。`gsecutil`为常见的密钥操作提供便利命令，使小团队能够更轻松地使用Google Cloud的Secret Manager管理密码和凭据，而无需专门的密码管理工具。
+🚀 带有配置文件支持的Google Secret Manager简化命令行包装器。`gsecutil`为常见的密钥操作提供便利命令，使小团队能够更轻松地使用Google Cloud的Secret Manager管理密码和凭据，而无需专门的密码管理工具。
 
 **v1.1.0新功能**: YAML配置文件支持、前缀功能、带有团队自定义元数据的增强列表和描述命令。
 

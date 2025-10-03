@@ -1,6 +1,6 @@
 # gsecutil - Google Secret Manager Utility
 
-🚀 **v1.1.0** - A simplified command-line wrapper for Google Secret Manager with configuration file support and team-friendly features. `gsecutil` provides convenient commands for common secret operations, making it easier for small teams to manage passwords and credentials using Google Cloud's Secret Manager without needing a dedicated password management tool.
+🚀 A simplified command-line wrapper for Google Secret Manager with configuration file support and team-friendly features. `gsecutil` provides convenient commands for common secret operations, making it easier for small teams to manage passwords and credentials using Google Cloud's Secret Manager without needing a dedicated password management tool.
 
 ## 🌍 Language Versions
 

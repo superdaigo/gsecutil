@@ -4,7 +4,7 @@
 >
 > **🆕 Nueva funcionalidad**: v1.1.1 agrega gestión automática de versiones para mantenerse dentro del nivel gratuito de Google Cloud (6 versiones activas). Consulte el README en inglés para más detalles.
 
-🚀 **v1.1.0** - Un envoltorio simplificado de línea de comandos para Google Secret Manager con soporte para archivos de configuración. `gsecutil` proporciona comandos convenientes para operaciones comunes de secretos, facilitando que equipos pequeños gestionen contraseñas y credenciales usando Google Cloud Secret Manager sin necesidad de herramientas dedicadas de gestión de contraseñas.
+🚀 Un envoltorio simplificado de línea de comandos para Google Secret Manager con soporte para archivos de configuración. `gsecutil` proporciona comandos convenientes para operaciones comunes de secretos, facilitando que equipos pequeños gestionen contraseñas y credenciales usando Google Cloud Secret Manager sin necesidad de herramientas dedicadas de gestión de contraseñas.
 
 **NUEVO en v1.1.0**: Soporte para archivos de configuración YAML, funcionalidad de prefijos, y comandos mejorados de lista y descripción con metadatos personalizados del equipo.
 
