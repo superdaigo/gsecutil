@@ -46,7 +46,6 @@ function Show-Help {
     Write-Host "  test          - Run tests" -ForegroundColor Green
     Write-Host "  fmt           - Format code" -ForegroundColor Green
     Write-Host "  vet           - Run go vet" -ForegroundColor Green
-    Write-Host "  lint          - Run golangci-lint (if installed)" -ForegroundColor Green
     Write-Host "  deps          - Install dependencies" -ForegroundColor Green
     Write-Host "  install       - Install locally" -ForegroundColor Green
     Write-Host "  dev           - Development build and show help" -ForegroundColor Green
@@ -218,30 +217,6 @@ function Run-Vet {
     }
 }
 
-# Function to run linter
-function Run-Lint {
-    # Check if golangci-lint is available
-    try {
-        & golangci-lint --version | Out-Null
-
-        Write-Host "Running golangci-lint..." -ForegroundColor Blue
-
-        & golangci-lint run
-
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "✓ Linting passed" -ForegroundColor Green
-            return $true
-        } else {
-            Write-Host "✗ Linting found issues" -ForegroundColor Red
-            return $false
-        }
-    }
-    catch {
-        Write-Host "⚠ golangci-lint not installed, skipping lint" -ForegroundColor Yellow
-        return $true
-    }
-}
-
 # Function to install dependencies
 function Install-Dependencies {
     Write-Host "Installing dependencies..." -ForegroundColor Blue
@@ -361,9 +336,6 @@ try {
         }
         "vet" {
             $Success = Run-Vet
-        }
-        "lint" {
-            $Success = Run-Lint
         }
         "deps" {
             $Success = Install-Dependencies

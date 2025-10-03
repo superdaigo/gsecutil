@@ -34,7 +34,6 @@ show_help() {
     echo -e "  ${GREEN}test${NC}          - Run tests"
     echo -e "  ${GREEN}fmt${NC}           - Format code"
     echo -e "  ${GREEN}vet${NC}           - Run go vet"
-    echo -e "  ${GREEN}lint${NC}          - Run golangci-lint (if installed)"
     echo -e "  ${GREEN}deps${NC}          - Install dependencies"
     echo -e "  ${GREEN}install${NC}       - Install locally"
     echo -e "  ${GREEN}dev${NC}           - Development build and show help"
@@ -180,24 +179,6 @@ run_vet() {
     fi
 }
 
-# Function to run linter
-run_lint() {
-    if command -v golangci-lint &> /dev/null; then
-        echo -e "${BLUE}Running golangci-lint...${NC}"
-        golangci-lint run
-        if [ $? -eq 0 ]; then
-            echo -e "${GREEN}✓ Linting passed${NC}"
-            return 0
-        else
-            echo -e "${RED}✗ Linting found issues${NC}"
-            return 1
-        fi
-    else
-        echo -e "${YELLOW}⚠ golangci-lint not installed, skipping lint${NC}"
-        return 0
-    fi
-}
-
 # Function to install dependencies
 install_deps() {
     echo -e "${BLUE}Installing dependencies...${NC}"
@@ -301,9 +282,6 @@ case "$1" in
         ;;
     vet)
         run_vet
-        ;;
-    lint)
-        run_lint
         ;;
     deps)
         install_deps

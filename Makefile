@@ -64,10 +64,6 @@ fmt:
 vet:
 	go vet ./...
 
-# Run linter (if golangci-lint is installed)
-lint:
-	golangci-lint run
-
 # Install dependencies
 deps:
 	go mod tidy
@@ -96,7 +92,6 @@ help:
 	@echo "  test          - Run tests"
 	@echo "  fmt           - Format code"
 	@echo "  vet           - Run go vet"
-	@echo "  lint          - Run golangci-lint (if installed)"
 	@echo "  deps          - Install dependencies"
 	@echo "  install       - Install locally"
 	@echo "  dev           - Development build and show help"
