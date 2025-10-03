@@ -157,6 +157,84 @@ gcloud config set project YOUR_PROJECT_ID
 gcloud auth activate-service-account --key-file=service-account.json
 ```
 
+### Shell 自动补全
+
+`gsecutil`支持bash、zsh、fish和PowerShell的shell自动补全。这使得命令、标志和选项的tab补全成为可能，使CLI更加用户友好。
+
+#### 设置说明
+
+**Bash:**
+```bash
+# 临时（仅当前会话）
+source <(gsecutil completion bash)
+
+# 永久安装（需要bash-completion包）
+# 系统全局（需要sudo）
+sudo gsecutil completion bash > /etc/bash_completion.d/gsecutil
+
+# 用户本地安装
+gsecutil completion bash > ~/.local/share/bash-completion/completions/gsecutil
+
+# 或添加到~/.bashrc以自动加载
+echo 'source <(gsecutil completion bash)' >> ~/.bashrc
+```
+
+**Zsh:**
+```bash
+# 临时（仅当前会话）
+source <(gsecutil completion zsh)
+
+# 永久安装
+gsecutil completion zsh > "${fpath[1]}/_gsecutil"
+
+# 或添加到~/.zshrc以自动加载
+echo 'source <(gsecutil completion zsh)' >> ~/.zshrc
+```
+
+**Fish:**
+```bash
+# 临时（仅当前会话）
+gsecutil completion fish | source
+
+# 永久安装
+gsecutil completion fish > ~/.config/fish/completions/gsecutil.fish
+```
+
+**PowerShell:**
+```powershell
+# 添加到PowerShell配置文件
+gsecutil completion powershell | Out-String | Invoke-Expression
+
+# 或保存到配置文件以自动加载
+gsecutil completion powershell >> $PROFILE
+```
+
+#### 功能特性
+
+安装后，shell补全提供：
+- **命令补全**: Tab补全`gsecutil`子命令（`get`、`create`、`list`等）
+- **标志补全**: Tab补全标志，如`--project`、`--version`、`--clipboard`
+- **智能建议**: 基于当前命令的上下文相关补全
+- **帮助文本**: 命令和标志的简要说明（在支持的情况下）
+
+#### 使用示例
+
+```bash
+# 输入并按Tab查看可用命令
+gsecutil <Tab>
+# 显示: access, auditlog, completion, create, delete, describe, get, help, list, update
+
+# 输入部分命令并按Tab补全
+gsecutil des<Tab>
+# 补全为: gsecutil describe
+
+# Tab补全也适用于标志
+gsecutil get my-secret --<Tab>
+# 显示: --clipboard, --project, --show-metadata, --version
+```
+
+**注意**: 您可能需要重启您的shell或源加载您的shell配置文件，以使补全生效。
+
 ## 安全性和最佳实践
 
 ### 安全特性

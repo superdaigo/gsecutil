@@ -157,6 +157,84 @@ gcloud config set project YOUR_PROJECT_ID
 gcloud auth activate-service-account --key-file=service-account.json
 ```
 
+### शेल ऑटोकॉम्प्लीशन
+
+`gsecutil` bash, zsh, fish, और PowerShell के लिए शेल ऑटोकॉम्प्लीशन का समर्थन करता है। यह कमांड, फ्लैग, और विकल्पों के लिए टैब पूर्णता को सक्षम बनाता है, CLI को अधिक उपयोगकर्ता-अनुकूल बनाता है।
+
+#### सेटअप निर्देश
+
+**Bash:**
+```bash
+# अस्थायी (केवल वर्तमान सत्र)
+source <(gsecutil completion bash)
+
+# स्थायी इंस्टॉलेशन (bash-completion पैकेज आवश्यक)
+# सिस्टम-व्यापी (sudo आवश्यक)
+sudo gsecutil completion bash > /etc/bash_completion.d/gsecutil
+
+# यूज़र-लोकल इंस्टॉलेशन
+gsecutil completion bash > ~/.local/share/bash-completion/completions/gsecutil
+
+# या ऑटोमेटिक लोडिंग के लिए ~/.bashrc में जोड़ें
+echo 'source <(gsecutil completion bash)' >> ~/.bashrc
+```
+
+**Zsh:**
+```bash
+# अस्थायी (केवल वर्तमान सत्र)
+source <(gsecutil completion zsh)
+
+# स्थायी इंस्टॉलेशन
+gsecutil completion zsh > "${fpath[1]}/_gsecutil"
+
+# या ऑटोमेटिक लोडिंग के लिए ~/.zshrc में जोड़ें
+echo 'source <(gsecutil completion zsh)' >> ~/.zshrc
+```
+
+**Fish:**
+```bash
+# अस्थायी (केवल वर्तमान सत्र)
+gsecutil completion fish | source
+
+# स्थायी इंस्टॉलेशन
+gsecutil completion fish > ~/.config/fish/completions/gsecutil.fish
+```
+
+**PowerShell:**
+```powershell
+# PowerShell प्रोफाइल में जोड़ें
+gsecutil completion powershell | Out-String | Invoke-Expression
+
+# या ऑटोमेटिक लोडिंग के लिए प्रोफाइल में सेव करें
+gsecutil completion powershell >> $PROFILE
+```
+
+#### विशेषताएं
+
+इंस्टॉल के बाद, शेल पूर्णता प्रदान करती है:
+- **कमांड पूर्णता**: `gsecutil` सबकमांड (`get`, `create`, `list`, आदि) के लिए टैब पूर्णता
+- **फ्लैग पूर्णता**: `--project`, `--version`, `--clipboard` जैसे फ्लैग के लिए टैब पूर्णता
+- **स्मार्ट सुझाव**: वर्तमान कमांड के आधार पर संदर्भ-जागरूक पूर्णताएं
+- **सहायता पाठ**: कमांड और फ्लैग के लिए संक्षिप्त वर्णन (जहां समर्थित)
+
+#### उपयोग उदाहरण
+
+```bash
+# टाइप करें और उपलब्ध कमांड देखने के लिए Tab दबाएं
+gsecutil <Tab>
+# दिखाता है: access, auditlog, completion, create, delete, describe, get, help, list, update
+
+# आंशिक कमांड टाइप करें और पूरा करने के लिए Tab दबाएं
+gsecutil des<Tab>
+# पूरा होता है: gsecutil describe
+
+# Tab पूर्णता फ्लैग के लिए भी काम करती है
+gsecutil get my-secret --<Tab>
+# दिखाता है: --clipboard, --project, --show-metadata, --version
+```
+
+**नोट**: पूर्णता प्रभावी होने के लिए आपको अपने शेल को पुनःआरंभ करने या अपनी शेल कॉन्फिगरेशन फाइल को source करने की आवश्यकता हो सकती है।
+
 ## सुरक्षा और सर्वोत्तम अभ्यास
 
 ### सुरक्षा सुविधाएं

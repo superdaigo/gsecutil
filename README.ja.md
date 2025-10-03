@@ -157,6 +157,84 @@ gcloud config set project YOUR_PROJECT_ID
 gcloud auth activate-service-account --key-file=service-account.json
 ```
 
+### シェル補完
+
+`gsecutil`はbash、zsh、fish、PowerShellのシェル自動補完をサポートしています。これにより、コマンド、フラグ、オプションのタブ補完が可能になり、CLIがより使いやすくなります。
+
+#### セットアップ手順
+
+**Bash:**
+```bash
+# 一時的（現在のセッションのみ）
+source <(gsecutil completion bash)
+
+# 永続インストール（bash-completionパッケージが必要）
+# システム全体（sudoが必要）
+sudo gsecutil completion bash > /etc/bash_completion.d/gsecutil
+
+# ユーザーローカルインストール
+gsecutil completion bash > ~/.local/share/bash-completion/completions/gsecutil
+
+# または~/.bashrcに追加して自動読み込み
+echo 'source <(gsecutil completion bash)' >> ~/.bashrc
+```
+
+**Zsh:**
+```bash
+# 一時的（現在のセッションのみ）
+source <(gsecutil completion zsh)
+
+# 永続インストール
+gsecutil completion zsh > "${fpath[1]}/_gsecutil"
+
+# または~/.zshrcに追加して自動読み込み
+echo 'source <(gsecutil completion zsh)' >> ~/.zshrc
+```
+
+**Fish:**
+```bash
+# 一時的（現在のセッションのみ）
+gsecutil completion fish | source
+
+# 永続インストール
+gsecutil completion fish > ~/.config/fish/completions/gsecutil.fish
+```
+
+**PowerShell:**
+```powershell
+# PowerShellプロファイルに追加
+gsecutil completion powershell | Out-String | Invoke-Expression
+
+# またはプロファイルに保存して自動読み込み
+gsecutil completion powershell >> $PROFILE
+```
+
+#### 機能
+
+インストール後、シェル補完は以下を提供します：
+- **コマンド補完**: `gsecutil`サブコマンドのタブ補完（`get`、`create`、`list`など）
+- **フラグ補完**: `--project`、`--version`、`--clipboard`などのフラグのタブ補完
+- **スマート提案**: 現在のコマンドに基づいたコンテキストを考慮した補完
+- **ヘルプテキスト**: コマンドやフラグの簡潔な説明（サポートされている場合）
+
+#### 使用例
+
+```bash
+# タイプしてTabを押し、使用可能なコマンドを表示
+gsecutil <Tab>
+# 表示: access, auditlog, completion, create, delete, describe, get, help, list, update
+
+# 部分コマンドをタイプしてTabで補完
+gsecutil des<Tab>
+# 補完結果: gsecutil describe
+
+# フラグのタブ補完も動作
+gsecutil get my-secret --<Tab>
+# 表示: --clipboard, --project, --show-metadata, --version
+```
+
+**注意**: 補完が有効になるために、シェルを再起動するか、シェル設定ファイルをソースする必要がある場合があります。
+
 ## セキュリティとベストプラクティス
 
 ### セキュリティ機能

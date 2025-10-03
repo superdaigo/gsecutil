@@ -157,6 +157,84 @@ gcloud config set project YOUR_PROJECT_ID
 gcloud auth activate-service-account --key-file=service-account.json
 ```
 
+### Autocompletado de Shell
+
+`gsecutil` soporta autocompletado de shell para bash, zsh, fish y PowerShell. Esto habilita el completado por tabulador para comandos, banderas y opciones, haciendo el CLI más fácil de usar.
+
+#### Instrucciones de Configuración
+
+**Bash:**
+```bash
+# Temporal (solo sesión actual)
+source <(gsecutil completion bash)
+
+# Instalación permanente (requiere paquete bash-completion)
+# Sistema completo (requiere sudo)
+sudo gsecutil completion bash > /etc/bash_completion.d/gsecutil
+
+# Instalación local del usuario
+gsecutil completion bash > ~/.local/share/bash-completion/completions/gsecutil
+
+# O añadir a ~/.bashrc para carga automática
+echo 'source <(gsecutil completion bash)' >> ~/.bashrc
+```
+
+**Zsh:**
+```bash
+# Temporal (solo sesión actual)
+source <(gsecutil completion zsh)
+
+# Instalación permanente
+gsecutil completion zsh > "${fpath[1]}/_gsecutil"
+
+# O añadir a ~/.zshrc para carga automática
+echo 'source <(gsecutil completion zsh)' >> ~/.zshrc
+```
+
+**Fish:**
+```bash
+# Temporal (solo sesión actual)
+gsecutil completion fish | source
+
+# Instalación permanente
+gsecutil completion fish > ~/.config/fish/completions/gsecutil.fish
+```
+
+**PowerShell:**
+```powershell
+# Añadir al perfil de PowerShell
+gsecutil completion powershell | Out-String | Invoke-Expression
+
+# O guardar en perfil para carga automática
+gsecutil completion powershell >> $PROFILE
+```
+
+#### Características
+
+Una vez instalado, el autocompletado de shell proporciona:
+- **Completado de comandos**: Tab para completar subcomandos de `gsecutil` (`get`, `create`, `list`, etc.)
+- **Completado de banderas**: Tab para completar banderas como `--project`, `--version`, `--clipboard`
+- **Sugerencias inteligentes**: Completados conscientes del contexto basados en el comando actual
+- **Texto de ayuda**: Descripciones breves para comandos y banderas (donde sea soportado)
+
+#### Ejemplo de Uso
+
+```bash
+# Escribe y presiona Tab para ver comandos disponibles
+gsecutil <Tab>
+# Muestra: access, auditlog, completion, create, delete, describe, get, help, list, update
+
+# Escribe comando parcial y presiona Tab para completar
+gsecutil des<Tab>
+# Completa a: gsecutil describe
+
+# El completado por tab también funciona para banderas
+gsecutil get my-secret --<Tab>
+# Muestra: --clipboard, --project, --show-metadata, --version
+```
+
+**Nota**: Es posible que necesites reiniciar tu shell o hacer source de tu archivo de configuración de shell para que el completado tome efecto.
+
 ## Seguridad y Mejores Prácticas
 
 ### Características de Seguridad

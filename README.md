@@ -629,6 +629,84 @@ gcloud config set project YOUR_PROJECT_ID
 gcloud auth activate-service-account --key-file=service-account.json
 ```
 
+### Shell Completion
+
+`gsecutil` supports shell autocompletion for bash, zsh, fish, and PowerShell. This enables tab completion for commands, flags, and options, making the CLI more user-friendly.
+
+#### Setup Instructions
+
+**Bash:**
+```bash
+# Temporary (current session only)
+source <(gsecutil completion bash)
+
+# Permanent installation (requires bash-completion package)
+# System-wide (requires sudo)
+sudo gsecutil completion bash > /etc/bash_completion.d/gsecutil
+
+# User-local installation
+gsecutil completion bash > ~/.local/share/bash-completion/completions/gsecutil
+
+# Or add to ~/.bashrc for automatic loading
+echo 'source <(gsecutil completion bash)' >> ~/.bashrc
+```
+
+**Zsh:**
+```bash
+# Temporary (current session only)
+source <(gsecutil completion zsh)
+
+# Permanent installation
+gsecutil completion zsh > "${fpath[1]}/_gsecutil"
+
+# Or add to ~/.zshrc for automatic loading
+echo 'source <(gsecutil completion zsh)' >> ~/.zshrc
+```
+
+**Fish:**
+```bash
+# Temporary (current session only)
+gsecutil completion fish | source
+
+# Permanent installation
+gsecutil completion fish > ~/.config/fish/completions/gsecutil.fish
+```
+
+**PowerShell:**
+```powershell
+# Add to PowerShell profile
+gsecutil completion powershell | Out-String | Invoke-Expression
+
+# Or save to profile for automatic loading
+gsecutil completion powershell >> $PROFILE
+```
+
+#### Features
+
+Once installed, shell completion provides:
+- **Command completion**: Tab to complete `gsecutil` subcommands (`get`, `create`, `list`, etc.)
+- **Flag completion**: Tab to complete flags like `--project`, `--version`, `--clipboard`
+- **Smart suggestions**: Context-aware completions based on the current command
+- **Help text**: Brief descriptions for commands and flags (where supported)
+
+#### Usage Example
+
+```bash
+# Type and press Tab to see available commands
+gsecutil <Tab>
+# Shows: access, auditlog, completion, create, delete, describe, get, help, list, update
+
+# Type partial command and press Tab to complete
+gsecutil des<Tab>
+# Completes to: gsecutil describe
+
+# Tab completion works for flags too
+gsecutil get my-secret --<Tab>
+# Shows: --clipboard, --project, --show-metadata, --version
+```
+
+**Note**: You may need to restart your shell or source your shell configuration file for completion to take effect.
+
 ## Security & Best Practices
 
 ### Security Features
