@@ -15,7 +15,8 @@
 - **Integración de portapapeles** - copiar valores de secretos directamente al portapapeles
 - **Entrada interactiva y de archivos** - solicitudes seguras o carga de secretos basada en archivos
 
-### 🛡️ **Gestión Avanzada de Acceso** *(NUEVO en v1.0.0)*
+### 🛡️ **Gestión Avanzada de Acceso**
+*(Introducido en v1.0.0)*
 - **Análisis completo de políticas IAM** - ver quién tiene acceso a secretos en cualquier nivel
 - **Verificación de permisos multinivel** - análisis de acceso a nivel de secreto y proyecto
 - **Reconocimiento de condiciones IAM** - soporte completo para políticas de acceso condicional con expresiones CEL

@@ -15,7 +15,8 @@
 - **Integração com área de transferência** - copiar valores de segredos diretamente para a área de transferência
 - **Entrada interativa e de arquivo** - prompts seguros ou carregamento de segredos baseado em arquivo
 
-### 🛡️ **Gerenciamento Avançado de Acesso** *(NOVO na v1.0.0)*
+### 🛡️ **Gerenciamento Avançado de Acesso**
+*(Introduzido na v1.0.0)*
 - **Análise completa de políticas IAM** - ver quem tem acesso a segredos em qualquer nível
 - **Verificação de permissões multinível** - análise de acesso a nível de segredo e projeto
 - **Consciência de condições IAM** - suporte completo para políticas de acesso condicional com expressões CEL
