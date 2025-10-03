@@ -26,6 +26,12 @@ go.work.sum
 *.swo
 *~
 
+# Emacs temporary file
+*~
+.\#*
+\#*\#
+*.elc
+
 # OS generated files
 .DS_Store
 .DS_Store?

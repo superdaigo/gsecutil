@@ -334,7 +334,8 @@ gsecutil auditlog --limit 20
 
 **Note**: The `auditlog` command requires Data Access audit logs to be enabled for the Secret Manager API. See [docs/audit-logging.md](docs/audit-logging.md) for detailed setup instructions.
 
-#### Access Management *(NEW in v1.0.0)*
+#### Access Management
+*(Introduced in v1.0.0)*
 
 Basic IAM access management for secrets:
 
@@ -516,7 +517,8 @@ SECRET_DATA=$(gsecutil get my-secret --format json | jq -r .data)
 gsecutil create app-config --data-file config.json
 ```
 
-## Configuration Files *(NEW in v1.1.0)*
+## Configuration Files
+*(Introduced in v1.1.0)*
 
 `gsecutil` supports YAML configuration files to streamline team workflows and add metadata to secrets. Configuration is completely optional - all existing workflows continue to work without any configuration file.
 
