@@ -73,7 +73,8 @@ Examples:
 	RunE: func(cmd *cobra.Command, args []string) error {
 		project, _ := cmd.Flags().GetString("project")
 		includeProject, _ := cmd.Flags().GetBool("include-project")
-		secretName := args[0]
+		userInputName := args[0]                           // What the user typed
+		secretName := AddPrefixToSecretName(userInputName) // Add prefix if configured
 		return listSecretAccess(secretName, project, includeProject)
 	},
 }
@@ -100,7 +101,8 @@ Examples:
 		project, _ := cmd.Flags().GetString("project")
 		principal, _ := cmd.Flags().GetString("principal")
 		role, _ := cmd.Flags().GetString("role")
-		secretName := args[0]
+		userInputName := args[0]                           // What the user typed
+		secretName := AddPrefixToSecretName(userInputName) // Add prefix if configured
 
 		if principal == "" {
 			return fmt.Errorf("--principal is required")
@@ -150,7 +152,8 @@ Examples:
 		project, _ := cmd.Flags().GetString("project")
 		principal, _ := cmd.Flags().GetString("principal")
 		role, _ := cmd.Flags().GetString("role")
-		secretName := args[0]
+		userInputName := args[0]                           // What the user typed
+		secretName := AddPrefixToSecretName(userInputName) // Add prefix if configured
 
 		if principal == "" {
 			return fmt.Errorf("--principal is required")

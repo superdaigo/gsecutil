@@ -1,6 +1,6 @@
 # gsecutil - Google Secret Manager Utility
 
-🚀 **v1.0.0** - A simplified command-line wrapper for Google Secret Manager. `gsecutil` provides convenient commands for common secret operations, making it easier for small teams to manage passwords and credentials using Google Cloud's Secret Manager without needing a dedicated password management tool.
+🚀 **v1.1.0** - A simplified command-line wrapper for Google Secret Manager with configuration file support and team-friendly features. `gsecutil` provides convenient commands for common secret operations, making it easier for small teams to manage passwords and credentials using Google Cloud's Secret Manager without needing a dedicated password management tool.
 
 ## 🌍 Language Versions
 
@@ -66,6 +66,14 @@ Many password managers are designed for personal use or require expensive team s
 - **Multiple output formats** - JSON, YAML, or human-readable table output
 - **Free to use** - leverages Google Cloud's free tier for small teams
 
+### ⚙️ **Configuration & Team Management** *(NEW in v1.1.0)*
+- **Configuration file support** - YAML configuration file for team settings and metadata
+- **Prefix functionality** - transparent prefix handling for team secret organization
+- **Enhanced list command** - display custom attributes and metadata from config
+- **Enhanced describe command** - show config attributes alongside Secret Manager metadata
+- **Team metadata** - document secret ownership, environment, descriptions, and custom attributes
+- **Flexible configuration** - works with or without config file (fully backward compatible)
+
 ## Prerequisites
 
 - [Google Cloud SDK (gcloud)](https://cloud.google.com/sdk/docs/install) installed and authenticated
@@ -90,11 +98,11 @@ Download the latest release for your platform from the [releases page](https://g
 
 ```bash
 # Linux/macOS example:
-mv gsecutil-linux-amd64-v1.0.0 gsecutil
+mv gsecutil-linux-amd64-v1.1.0 gsecutil
 chmod +x gsecutil
 
 # Windows example (PowerShell/Command Prompt):
-ren gsecutil-windows-amd64-v1.0.0.exe gsecutil.exe
+ren gsecutil-windows-amd64-v1.1.0.exe gsecutil.exe
 ```
 
 This allows you to use `gsecutil` consistently regardless of version.
@@ -132,6 +140,7 @@ make build-all
 ### Global Options
 
 - `-p, --project`: Google Cloud project ID (can also be set via `GOOGLE_CLOUD_PROJECT` environment variable)
+- `--config`: Path to configuration file (default: `~/.config/gsecutil/gsecutil.conf`)
 
 ### Commands
 
@@ -214,21 +223,36 @@ gsecutil delete my-secret --force
 
 #### List Secrets
 
-List all secrets in a project:
+List all secrets in a project with enhanced configuration support:
 
 ```bash
 # List all secrets
 gsecutil list
 
+# List with config attributes (shows title, owner, environment from config file)
+gsecutil list --show-attributes "title,owner,environment"
+
+# Filter by configuration attributes
+gsecutil list --filter-attributes "environment=production,owner=backend-team"
+
 # List with custom format
 gsecutil list --format json
 
-# List with filter
+# List with Secret Manager label filter
 gsecutil list --filter "labels.env=prod"
 
 # List with limit
 gsecutil list --limit 10
+
+# List secrets accessible by a specific principal
+gsecutil list --principal user:alice@example.com
 ```
+
+**Configuration Features** *(NEW in v1.1.0)*:
+- **--show-attributes**: Display custom attributes from configuration file
+- **--filter-attributes**: Filter secrets by configuration attributes
+- **Automatic attribute display**: Shows default attributes when configuration file is present
+- **Prefix filtering**: Automatically filters by configured prefix
 
 #### Describe Secret
 
@@ -247,6 +271,7 @@ gsecutil describe my-secret --format json
 
 **Information Displayed:**
 - Basic metadata (name, creation time, ETag)
+- **Config attributes** *(NEW in v1.1.0)* - title, owner, environment, and custom attributes from configuration file
 - **Default version** (current active version, state, creation time)
 - **Replication strategy** (automatic multi-region or user-managed)
 - **Labels** (sorted alphabetically for organization)
@@ -491,6 +516,96 @@ SECRET_DATA=$(gsecutil get my-secret --format json | jq -r .data)
 gsecutil create app-config --data-file config.json
 ```
 
+## Configuration Files *(NEW in v1.1.0)*
+
+`gsecutil` supports YAML configuration files to streamline team workflows and add metadata to secrets. Configuration is completely optional - all existing workflows continue to work without any configuration file.
+
+### Configuration File Location
+
+By default, `gsecutil` looks for a configuration file at:
+- **Linux/macOS**: `~/.config/gsecutil/gsecutil.conf`
+- **Windows**: `%USERPROFILE%\.config\gsecutil\gsecutil.conf`
+
+You can specify a custom config file with the `--config` flag:
+
+```bash
+gsecutil --config /path/to/team-config.conf list
+```
+
+### Configuration File Format
+
+```yaml
+# gsecutil configuration file
+# Google Cloud Project (can be overridden by CLI --project flag)
+project: "my-team-project-123"
+
+# Secret name prefix (optional but recommended for teams)
+# Automatically added to user input and filtered in list commands
+prefix: "team-shared-"
+
+# List command configuration
+list:
+  # Default attributes to show (can be overridden by --show-attributes)
+  attributes:
+    - title
+    - owner
+    - environment
+
+# Team metadata for secrets
+credentials:
+  - name: "database-password"  # Secret name (without prefix)
+    title: "Production Database Password"
+    description: "MySQL root password for production database"
+    environment: "production"
+    owner: "backend-team"
+    rotation_schedule: "quarterly"
+
+  - name: "api-key"
+    title: "External API Key"
+    description: "Production API key for payment processing"
+    environment: "production"
+    owner: "api-team"
+    sensitive_level: "high"
+```
+
+### Configuration Benefits
+
+- **Team Documentation**: Add titles, descriptions, owners, and custom metadata
+- **Prefix Management**: Automatically handle team prefixes (e.g., `team-shared-database-password`)
+- **Enhanced List Output**: Show custom attributes instead of just secret names
+- **Filtering**: Filter by configuration attributes (`--filter-attributes "environment=prod"`)
+- **Shared Configuration**: Commit config files to version control for team sharing
+
+### Usage with Configuration
+
+```bash
+# User types short name, gsecutil adds prefix automatically
+gsecutil get database-password  # Actually accesses "team-shared-database-password"
+
+# List shows custom attributes from config
+gsecutil list
+# NAME                           TITLE                        OWNER         ENVIRONMENT
+# team-shared-database-password  Production Database Password backend-team  production
+# team-shared-api-key           External API Key             api-team      production
+
+# Describe shows config attributes along with Google Secret Manager metadata
+gsecutil describe database-password
+# Name: projects/my-project/secrets/team-shared-database-password
+# Created: 2025-09-04T13:30:11Z
+#
+# Config Attributes:
+#   title: Production Database Password
+#   description: MySQL root password for production database
+#   environment: production
+#   owner: backend-team
+#   rotation_schedule: quarterly
+#
+# Default Version: 4
+# ...
+```
+
+For complete configuration examples, see the [`examples/`](examples/) directory.
+
 ## Configuration
 
 ### Environment Variables
@@ -562,6 +677,7 @@ export CLOUDSDK_CORE_VERBOSITY=debug
 
 - **[BUILD.md](BUILD.md)** - Comprehensive build instructions for all platforms
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** - Contributing guidelines and development workflow
+- **[docs/configuration.md](docs/configuration.md)** - Detailed configuration file reference and examples
 - **[WARP.md](WARP.md)** - Development guidance for WARP AI terminal integration
 - **README.md** - This file, usage and overview
 

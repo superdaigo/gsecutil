@@ -2,7 +2,9 @@
 
 > **翻訳について**: このREADMEファイルは機械翻訳されています。最新かつ正確な情報については、英語版の[README.md](README.md)をご参照ください。
 
-🚀 **v1.0.0** - Google Secret Managerのシンプルなコマンドラインラッパー。`gsecutil`は一般的な秘密操作のための便利なコマンドを提供し、小規模なチームが専用のパスワード管理ツールを必要とせずにGoogle CloudのSecret Managerを使用してパスワードや認証情報を管理しやすくします。
+🚀 **v1.1.0** - 設定ファイルサポート付きGoogle Secret Managerのシンプルなコマンドラインラッパー。`gsecutil`は一般的な秘密操作のための便利なコマンドを提供し、小規模なチームが専用のパスワード管理ツールを必要とせずにGoogle CloudのSecret Managerを使用してパスワードや認証情報を管理しやすくします。
+
+**v1.1.0の新機能**: YAML設定ファイルサポート、プレフィックス機能、チームカスタムメタデータ付きの拡張リストおよび説明コマンド。
 
 ## ✨ 機能
 
@@ -56,11 +58,11 @@
 
 ```bash
 # Linux/macOS 例:
-mv gsecutil-linux-amd64-v1.0.0 gsecutil
+mv gsecutil-linux-amd64-v1.1.0 gsecutil
 chmod +x gsecutil
 
 # Windows 例 (PowerShell/Command Prompt):
-ren gsecutil-windows-amd64-v1.0.0.exe gsecutil.exe
+ren gsecutil-windows-amd64-v1.1.0.exe gsecutil.exe
 ```
 
 これにより、バージョンに関係なく`gsecutil`を一貫して使用できます。

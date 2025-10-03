@@ -2,7 +2,9 @@
 
 > **翻译说明**: 此README文件为机器翻译。最新和准确的信息请参考英文版[README.md](README.md)。
 
-🚀 **v1.0.0** - Google Secret Manager的简化命令行包装器。`gsecutil`为常见的密钥操作提供便利命令，使小团队能够更轻松地使用Google Cloud的Secret Manager管理密码和凭据，而无需专门的密码管理工具。
+🚀 **v1.1.0** - 带有配置文件支持的Google Secret Manager简化命令行包装器。`gsecutil`为常见的密钥操作提供便利命令，使小团队能够更轻松地使用Google Cloud的Secret Manager管理密码和凭据，而无需专门的密码管理工具。
+
+**v1.1.0新功能**: YAML配置文件支持、前缀功能、带有团队自定义元数据的增强列表和描述命令。
 
 ## ✨ 功能特性
 
@@ -56,11 +58,11 @@
 
 ```bash
 # Linux/macOS 示例:
-mv gsecutil-linux-amd64-v1.0.0 gsecutil
+mv gsecutil-linux-amd64-v1.1.0 gsecutil
 chmod +x gsecutil
 
 # Windows 示例 (PowerShell/Command Prompt):
-ren gsecutil-windows-amd64-v1.0.0.exe gsecutil.exe
+ren gsecutil-windows-amd64-v1.1.0.exe gsecutil.exe
 ```
 
 这样您就可以不受版本影响地一致使用`gsecutil`。

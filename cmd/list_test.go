@@ -403,3 +403,246 @@ func TestSecretInfoSorting(t *testing.T) {
 		}
 	}
 }
+
+// TestExtractSecretName tests the actual extractSecretName function used in the list command
+func TestExtractSecretNameActual(t *testing.T) {
+	tests := []struct {
+		name     string
+		fullName string
+		expected string
+	}{
+		{
+			name:     "Full Google Secret Manager path",
+			fullName: "projects/my-project/secrets/my-secret",
+			expected: "my-secret",
+		},
+		{
+			name:     "Already just the name",
+			fullName: "simple-secret",
+			expected: "simple-secret",
+		},
+		{
+			name:     "Empty string",
+			fullName: "",
+			expected: "",
+		},
+		{
+			name:     "Complex secret name with hyphens",
+			fullName: "projects/test-project-123/secrets/my-api-key-v2",
+			expected: "my-api-key-v2",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := extractSecretName(tt.fullName)
+			if result != tt.expected {
+				t.Errorf("extractSecretName(%q) = %q, expected %q", tt.fullName, result, tt.expected)
+			}
+		})
+	}
+}
+
+// TestSecretPrefixFiltering tests prefix-based filtering of secrets
+func TestSecretPrefixFiltering(t *testing.T) {
+	tests := []struct {
+		name          string
+		prefix        string
+		secrets       []SecretInfo
+		expectedLen   int
+		expectedNames []string
+	}{
+		{
+			name:   "No prefix - all secrets included",
+			prefix: "",
+			secrets: []SecretInfo{
+				{Name: "projects/test/secrets/team-db-password"},
+				{Name: "projects/test/secrets/individual-key"},
+				{Name: "projects/test/secrets/team-api-secret"},
+			},
+			expectedLen:   3,
+			expectedNames: []string{"team-db-password", "individual-key", "team-api-secret"},
+		},
+		{
+			name:   "Filter by prefix 'team-'",
+			prefix: "team-",
+			secrets: []SecretInfo{
+				{Name: "projects/test/secrets/team-db-password"},
+				{Name: "projects/test/secrets/individual-key"},
+				{Name: "projects/test/secrets/team-api-secret"},
+			},
+			expectedLen:   2,
+			expectedNames: []string{"team-db-password", "team-api-secret"},
+		},
+		{
+			name:   "Filter by prefix with no matches",
+			prefix: "prod-",
+			secrets: []SecretInfo{
+				{Name: "projects/test/secrets/dev-password"},
+				{Name: "projects/test/secrets/staging-key"},
+			},
+			expectedLen:   0,
+			expectedNames: []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Mock the global config with the prefix
+			originalConfig := globalConfig
+			defer func() { globalConfig = originalConfig }()
+
+			globalConfig = &Config{
+				Prefix: tt.prefix,
+			}
+
+			// Filter secrets by prefix (simulating the logic in listSecretsWithConfigAttributes)
+			var filteredSecrets []SecretInfo
+			if tt.prefix != "" {
+				for _, secret := range tt.secrets {
+					secretName := extractSecretName(secret.Name)
+					if FilterSecretsByPrefix(secretName) {
+						filteredSecrets = append(filteredSecrets, secret)
+					}
+				}
+			} else {
+				filteredSecrets = tt.secrets
+			}
+
+			if len(filteredSecrets) != tt.expectedLen {
+				t.Errorf("Expected %d filtered secrets, got %d", tt.expectedLen, len(filteredSecrets))
+			}
+
+			// Check that the right secrets were included
+			for i, secret := range filteredSecrets {
+				actualName := extractSecretName(secret.Name)
+				if i < len(tt.expectedNames) && actualName != tt.expectedNames[i] {
+					t.Errorf("Expected filtered secret %d to be %q, got %q",
+						i, tt.expectedNames[i], actualName)
+				}
+			}
+		})
+	}
+}
+
+// TestConfigAttributeDisplay tests displaying config attributes in list output
+func TestConfigAttributeDisplay(t *testing.T) {
+	tests := []struct {
+		name           string
+		prefix         string
+		secrets        []SecretInfo
+		credentials    []CredentialInfo
+		attributes     []string
+		expectedValues map[string]map[string]string // secret_name -> attribute -> value
+	}{
+		{
+			name:   "Display config attributes for secrets with prefix",
+			prefix: "team-",
+			secrets: []SecretInfo{
+				{Name: "projects/test/secrets/team-db-password"},
+				{Name: "projects/test/secrets/team-api-key"},
+			},
+			credentials: []CredentialInfo{
+				{
+					Name:  "db-password", // This matches "team-db-password" after prefix removal
+					Title: "Database Password",
+					Attributes: map[string]interface{}{
+						"environment": "production",
+						"owner":       "backend-team",
+					},
+				},
+				{
+					Name:  "api-key", // This matches "team-api-key" after prefix removal
+					Title: "API Key",
+					Attributes: map[string]interface{}{
+						"environment": "production",
+						"owner":       "frontend-team",
+					},
+				},
+			},
+			attributes: []string{"title", "environment", "owner"},
+			expectedValues: map[string]map[string]string{
+				"team-db-password": {
+					"title":       "Database Password",
+					"environment": "production",
+					"owner":       "backend-team",
+				},
+				"team-api-key": {
+					"title":       "API Key",
+					"environment": "production",
+					"owner":       "frontend-team",
+				},
+			},
+		},
+		{
+			name:   "No prefix - direct credential lookup",
+			prefix: "",
+			secrets: []SecretInfo{
+				{Name: "projects/test/secrets/database-password"},
+			},
+			credentials: []CredentialInfo{
+				{
+					Name:  "database-password",
+					Title: "Direct Database Password",
+					Attributes: map[string]interface{}{
+						"environment": "staging",
+					},
+				},
+			},
+			attributes: []string{"title", "environment"},
+			expectedValues: map[string]map[string]string{
+				"database-password": {
+					"title":       "Direct Database Password",
+					"environment": "staging",
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Mock the global config
+			originalConfig := globalConfig
+			defer func() { globalConfig = originalConfig }()
+
+			globalConfig = &Config{
+				Prefix:      tt.prefix,
+				Credentials: tt.credentials,
+				List: ListConfig{
+					Attributes: tt.attributes,
+				},
+			}
+
+			// Test attribute value retrieval for each secret
+			for _, secret := range tt.secrets {
+				secretName := extractSecretName(secret.Name)
+
+				// Convert secret name to user input name for config lookup
+				userInputName := secretName
+				if tt.prefix != "" && strings.HasPrefix(secretName, tt.prefix) {
+					userInputName = strings.TrimPrefix(secretName, tt.prefix)
+				}
+
+				cred := GetCredentialInfo(userInputName)
+				expectedAttrs, hasExpected := tt.expectedValues[secretName]
+
+				if hasExpected {
+					if cred == nil {
+						t.Errorf("Expected credential info for %q but got nil", userInputName)
+						continue
+					}
+
+					for _, attr := range tt.attributes {
+						actualValue := GetAttributeValue(cred, attr)
+						expectedValue, hasAttr := expectedAttrs[attr]
+
+						if hasAttr && actualValue != expectedValue {
+							t.Errorf("For secret %q, attribute %q: got %q, expected %q",
+								secretName, attr, actualValue, expectedValue)
+						}
+					}
+				}
+			}
+		})
+	}
+}

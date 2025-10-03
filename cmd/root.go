@@ -30,4 +30,16 @@ func Execute(version string) {
 func init() {
 	// Global flags
 	rootCmd.PersistentFlags().StringP("project", "p", "", "Google Cloud project ID")
+	rootCmd.PersistentFlags().String("config", "", "Configuration file path (default: $HOME/.config/gsecutil/gsecutil.conf)")
+
+	// Set up pre-run hook to load custom config if specified
+	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+		configPath, _ := cmd.Flags().GetString("config")
+		if configPath != "" {
+			if err := SetCustomConfigPath(configPath); err != nil {
+				return fmt.Errorf("failed to load config file: %w", err)
+			}
+		}
+		return nil
+	}
 }

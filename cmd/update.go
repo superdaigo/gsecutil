@@ -16,7 +16,8 @@ You can provide the secret value via --data flag, from a file using --data-file,
 or interactively (prompt).`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		secretName := args[0]
+		userInputName := args[0]                           // What the user typed
+		secretName := AddPrefixToSecretName(userInputName) // Add prefix if configured
 		project, _ := cmd.Flags().GetString("project")
 		data, _ := cmd.Flags().GetString("data")
 		dataFile, _ := cmd.Flags().GetString("data-file")

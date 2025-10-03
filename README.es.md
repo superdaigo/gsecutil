@@ -2,7 +2,9 @@
 
 > **Nota sobre la traducción**: Este archivo README ha sido traducido automáticamente. Para obtener la información más actualizada y precisa, consulte la versión en inglés [README.md](README.md).
 
-🚀 **v1.0.0** - Un envoltorio simplificado de línea de comandos para Google Secret Manager. `gsecutil` proporciona comandos convenientes para operaciones comunes de secretos, facilitando que equipos pequeños gestionen contraseñas y credenciales usando Google Cloud Secret Manager sin necesidad de herramientas dedicadas de gestión de contraseñas.
+🚀 **v1.1.0** - Un envoltorio simplificado de línea de comandos para Google Secret Manager con soporte para archivos de configuración. `gsecutil` proporciona comandos convenientes para operaciones comunes de secretos, facilitando que equipos pequeños gestionen contraseñas y credenciales usando Google Cloud Secret Manager sin necesidad de herramientas dedicadas de gestión de contraseñas.
+
+**NUEVO en v1.1.0**: Soporte para archivos de configuración YAML, funcionalidad de prefijos, y comandos mejorados de lista y descripción con metadatos personalizados del equipo.
 
 ## ✨ Características
 
@@ -56,11 +58,11 @@ Descarga la última versión para tu plataforma desde la [página de versiones](
 
 ```bash
 # Ejemplo Linux/macOS:
-mv gsecutil-linux-amd64-v1.0.0 gsecutil
+mv gsecutil-linux-amd64-v1.1.0 gsecutil
 chmod +x gsecutil
 
 # Ejemplo Windows (PowerShell/Command Prompt):
-ren gsecutil-windows-amd64-v1.0.0.exe gsecutil.exe
+ren gsecutil-windows-amd64-v1.1.0.exe gsecutil.exe
 ```
 
 Esto te permite usar `gsecutil` de manera consistente independientemente de la versión.

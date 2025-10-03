@@ -18,7 +18,8 @@ This operation is irreversible and will permanently remove the secret
 and all of its versions.`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		secretName := args[0]
+		userInputName := args[0]                           // What the user typed
+		secretName := AddPrefixToSecretName(userInputName) // Add prefix if configured
 		project, _ := cmd.Flags().GetString("project")
 		force, _ := cmd.Flags().GetBool("force")
 

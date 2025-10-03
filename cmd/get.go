@@ -24,7 +24,8 @@ Examples:
   gsecutil get my-secret --show-metadata    # Show version info along with value`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		secretName := args[0]
+		userInputName := args[0]                           // What the user typed
+		secretName := AddPrefixToSecretName(userInputName) // Add prefix if configured
 		project, _ := cmd.Flags().GetString("project")
 		version, _ := cmd.Flags().GetString("version")
 		clipboard, _ := cmd.Flags().GetBool("clipboard")

@@ -14,13 +14,16 @@ var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all secrets in Google Secret Manager",
 	Long: `List all secrets in the specified Google Cloud project.
-You can filter results and control the output format. By default, includes labels.
+You can filter results and control the output format. Supports configuration-based
+attribute display and filtering.
 
 Examples:
-  gsecutil list                     # List all secrets with labels
+  gsecutil list                     # List secrets with default attributes from config
   gsecutil list --no-labels         # List secrets without labels
   gsecutil list --format json       # Raw JSON output
-  gsecutil list --filter "labels.env=prod"  # Filter by label
+  gsecutil list --filter "labels.env=prod"  # Filter by Secret Manager labels
+  gsecutil list --filter-attributes "environment=prod"  # Filter by config attributes
+  gsecutil list --show-attributes "title,owner,environment"  # Show specific attributes
   gsecutil list --principal user:alice@example.com  # List secrets accessible by a principal`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		project, _ := cmd.Flags().GetString("project")
@@ -29,6 +32,11 @@ Examples:
 		limit, _ := cmd.Flags().GetInt("limit")
 		noLabels, _ := cmd.Flags().GetBool("no-labels")
 		principal, _ := cmd.Flags().GetString("principal")
+		filterAttributes, _ := cmd.Flags().GetString("filter-attributes")
+		showAttributes, _ := cmd.Flags().GetString("show-attributes")
+
+		// Use configuration-based project resolution
+		project = GetProject(project)
 
 		// If principal is specified, list secrets accessible by that principal
 		if principal != "" {
@@ -40,8 +48,13 @@ Examples:
 			return runOriginalGcloudList(project, filter, format, limit)
 		}
 
-		// Enhanced list with labels
-		return listSecretsWithLabels(project, filter, limit, !noLabels)
+		// Handle configuration-based filtering
+		if filterAttributes != "" {
+			return listSecretsWithConfigFiltering(project, filter, limit, filterAttributes, showAttributes, !noLabels)
+		}
+
+		// Enhanced list with potential config attributes
+		return listSecretsWithConfigAttributes(project, filter, limit, showAttributes, !noLabels)
 	},
 }
 
@@ -416,10 +429,247 @@ func validatePrincipalFormat(principal string) error {
 	return fmt.Errorf("invalid principal format: %s\nValid formats: user:email@domain.com, group:group@domain.com, serviceAccount:sa@project.iam.gserviceaccount.com, domain:domain.com, allUsers, allAuthenticatedUsers", principal)
 }
 
+// listSecretsWithConfigAttributes lists secrets with configuration-based attribute display
+func listSecretsWithConfigAttributes(project, filter string, limit int, showAttributes string, showLabels bool) error {
+	// Get secrets first
+	gcloudArgs := []string{"secrets", "list", "--format", "json"}
+
+	if project != "" {
+		gcloudArgs = append(gcloudArgs, "--project", project)
+	}
+
+	if filter != "" {
+		gcloudArgs = append(gcloudArgs, "--filter", filter)
+	}
+
+	if limit > 0 {
+		gcloudArgs = append(gcloudArgs, "--limit", fmt.Sprintf("%d", limit))
+	}
+
+	// Execute gcloud command
+	gcloudCmd := exec.Command("gcloud", gcloudArgs...)
+	output, err := gcloudCmd.Output()
+	if err != nil {
+		if exitError, ok := err.(*exec.ExitError); ok {
+			return fmt.Errorf("gcloud command failed: %s", string(exitError.Stderr))
+		}
+		return fmt.Errorf("failed to execute gcloud command: %v", err)
+	}
+
+	// Parse JSON response
+	var secrets []SecretInfo
+	if err := json.Unmarshal(output, &secrets); err != nil {
+		return fmt.Errorf("failed to parse secrets list: %w", err)
+	}
+
+	// Filter by prefix if configured
+	if prefix := GetPrefix(); prefix != "" {
+		var filteredSecrets []SecretInfo
+		for _, secret := range secrets {
+			secretName := extractSecretName(secret.Name)
+			if strings.HasPrefix(secretName, prefix) {
+				filteredSecrets = append(filteredSecrets, secret)
+			}
+		}
+		secrets = filteredSecrets
+	}
+
+	if len(secrets) == 0 {
+		fmt.Println("No secrets found.")
+		return nil
+	}
+
+	// Sort secrets by name for consistent output
+	sort.Slice(secrets, func(i, j int) bool {
+		return secrets[i].Name < secrets[j].Name
+	})
+
+	// Determine which attributes to show
+	var attributes []string
+	if showAttributes != "" {
+		// CLI parameter overrides everything
+		attributes = ParseShowAttributes(showAttributes)
+	} else {
+		// Use config file settings
+		attributes = GetListAttributes()
+	}
+
+	// Display secrets with or without config attributes
+	if len(attributes) > 0 {
+		displaySecretsWithConfigAttributes(secrets, attributes)
+	} else if showLabels {
+		displaySecretsWithLabels(secrets)
+	} else {
+		displaySecretsSimple(secrets)
+	}
+
+	return nil
+}
+
+// listSecretsWithConfigFiltering lists secrets filtered by configuration attributes
+func listSecretsWithConfigFiltering(project, filter string, limit int, filterAttributes, showAttributes string, showLabels bool) error {
+	// Parse filter attributes
+	filters, err := ParseFilterAttributes(filterAttributes)
+	if err != nil {
+		return fmt.Errorf("invalid filter-attributes: %w", err)
+	}
+
+	// Filter credentials based on attributes
+	filteredCredentials := FilterCredentialsByAttributes(filters)
+	if len(filteredCredentials) == 0 {
+		fmt.Println("No secrets match the specified attribute filters.")
+		return nil
+	}
+
+	// Get all secrets to match against filtered credentials
+	gcloudArgs := []string{"secrets", "list", "--format", "json"}
+
+	if project != "" {
+		gcloudArgs = append(gcloudArgs, "--project", project)
+	}
+
+	if filter != "" {
+		gcloudArgs = append(gcloudArgs, "--filter", filter)
+	}
+
+	if limit > 0 {
+		gcloudArgs = append(gcloudArgs, "--limit", fmt.Sprintf("%d", limit))
+	}
+
+	// Execute gcloud command
+	gcloudCmd := exec.Command("gcloud", gcloudArgs...)
+	output, err := gcloudCmd.Output()
+	if err != nil {
+		if exitError, ok := err.(*exec.ExitError); ok {
+			return fmt.Errorf("gcloud command failed: %s", string(exitError.Stderr))
+		}
+		return fmt.Errorf("failed to execute gcloud command: %v", err)
+	}
+
+	// Parse JSON response
+	var allSecrets []SecretInfo
+	if err := json.Unmarshal(output, &allSecrets); err != nil {
+		return fmt.Errorf("failed to parse secrets list: %w", err)
+	}
+
+	// Match secrets with filtered credentials
+	var matchingSecrets []SecretInfo
+	for _, secret := range allSecrets {
+		secretName := extractSecretName(secret.Name)
+		for _, cred := range filteredCredentials {
+			if cred.Name == secretName {
+				matchingSecrets = append(matchingSecrets, secret)
+				break
+			}
+		}
+	}
+
+	if len(matchingSecrets) == 0 {
+		fmt.Println("No secrets found matching the attribute filters.")
+		return nil
+	}
+
+	// Sort secrets by name for consistent output
+	sort.Slice(matchingSecrets, func(i, j int) bool {
+		return matchingSecrets[i].Name < matchingSecrets[j].Name
+	})
+
+	// Determine which attributes to show
+	var attributes []string
+	if showAttributes != "" {
+		// CLI parameter overrides everything
+		attributes = ParseShowAttributes(showAttributes)
+	} else {
+		// Use config file settings
+		attributes = GetListAttributes()
+	}
+
+	// Display filtered secrets with config attributes
+	if len(attributes) > 0 {
+		displaySecretsWithConfigAttributes(matchingSecrets, attributes)
+	} else if showLabels {
+		displaySecretsWithLabels(matchingSecrets)
+	} else {
+		displaySecretsSimple(matchingSecrets)
+	}
+
+	return nil
+}
+
+// displaySecretsWithConfigAttributes displays secrets with configuration-based attributes
+func displaySecretsWithConfigAttributes(secrets []SecretInfo, attributes []string) {
+	// Calculate column widths
+	maxNameWidth := 4 // "NAME"
+	attributeWidths := make([]int, len(attributes))
+
+	// Initialize attribute widths with header names
+	for i, attr := range attributes {
+		attributeWidths[i] = len(strings.ToUpper(attr))
+	}
+
+	// Calculate widths based on content
+	for _, secret := range secrets {
+		secretName := extractSecretName(secret.Name)
+		if len(secretName) > maxNameWidth {
+			maxNameWidth = len(secretName)
+		}
+
+		// Convert secret name to user input name for config lookup
+		userInputName := secretName
+		if prefix := GetPrefix(); prefix != "" && strings.HasPrefix(secretName, prefix) {
+			userInputName = strings.TrimPrefix(secretName, prefix)
+		}
+
+		cred := GetCredentialInfo(userInputName)
+		for i, attr := range attributes {
+			value := GetAttributeValue(cred, attr)
+			if len(value) > attributeWidths[i] {
+				attributeWidths[i] = len(value)
+			}
+		}
+	}
+
+	// Print header
+	header := fmt.Sprintf("%-*s", maxNameWidth, "NAME")
+	for i, attr := range attributes {
+		header += fmt.Sprintf("  %-*s", attributeWidths[i], strings.ToUpper(attr))
+	}
+	fmt.Println(header)
+
+	// Print separator
+	separator := strings.Repeat("-", maxNameWidth)
+	for _, width := range attributeWidths {
+		separator += "  " + strings.Repeat("-", width)
+	}
+	fmt.Println(separator)
+
+	// Print secrets
+	for _, secret := range secrets {
+		secretName := extractSecretName(secret.Name)
+
+		// Convert secret name to user input name for config lookup
+		userInputName := secretName
+		if prefix := GetPrefix(); prefix != "" && strings.HasPrefix(secretName, prefix) {
+			userInputName = strings.TrimPrefix(secretName, prefix)
+		}
+
+		cred := GetCredentialInfo(userInputName)
+
+		row := fmt.Sprintf("%-*s", maxNameWidth, secretName)
+		for i, attr := range attributes {
+			value := GetAttributeValue(cred, attr)
+			row += fmt.Sprintf("  %-*s", attributeWidths[i], value)
+		}
+		fmt.Println(row)
+	}
+}
+
 func init() {
 	rootCmd.AddCommand(listCmd)
-	listCmd.Flags().String("filter", "", "Filter expression to apply to the list")
-	listCmd.Flags().String("format", "", "Output format (e.g., table, json, yaml) - custom formats bypass label display")
+	listCmd.Flags().String("filter", "", "Filter expression to apply to Secret Manager labels")
+	listCmd.Flags().String("filter-attributes", "", "Filter by configuration file attributes (format: key=value,key2=value2)")
+	listCmd.Flags().String("show-attributes", "", "Comma-separated list of attributes to display from configuration file")
+	listCmd.Flags().String("format", "", "Output format (e.g., table, json, yaml) - custom formats bypass attribute display")
 	listCmd.Flags().Int("limit", 0, "Maximum number of secrets to list (0 for no limit)")
 	listCmd.Flags().Bool("no-labels", false, "Hide labels in output")
 	listCmd.Flags().String("principal", "", "List secrets accessible by this principal (format: user:email@domain.com, group:group@domain.com, etc.)")

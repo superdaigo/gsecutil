@@ -23,7 +23,8 @@ var describeCmd = &cobra.Command{
 Use --show-versions to also display detailed information about all versions.`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		secretName := args[0]
+		userInputName := args[0]                           // What the user typed
+		secretName := AddPrefixToSecretName(userInputName) // Add prefix if configured
 		project, _ := cmd.Flags().GetString("project")
 		format, _ := cmd.Flags().GetString("format")
 		showVersions, _ := cmd.Flags().GetBool("show-versions")
@@ -49,7 +50,8 @@ Use --show-versions to also display detailed information about all versions.`,
 		}
 
 		// Enhanced describe with version information
-		return describeSecretWithVersions(secretName, project, showVersions)
+		// Pass both the full secret name (with prefix) and user input name
+		return describeSecretWithVersions(secretName, userInputName, project, showVersions)
 	},
 }
 

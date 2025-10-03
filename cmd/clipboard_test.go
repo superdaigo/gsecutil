@@ -363,6 +363,106 @@ func TestSecretVersionInfoJSONParsing(t *testing.T) {
 	}
 }
 
+// TestDisplayConfigAttributes tests config attribute display functionality
+func TestDisplayConfigAttributes(t *testing.T) {
+	tests := []struct {
+		name          string
+		userInputName string
+		credentials   []CredentialInfo
+		expectOutput  bool
+		expectedAttrs map[string]string
+	}{
+		{
+			name:          "Display config attributes for existing credential",
+			userInputName: "database-password",
+			credentials: []CredentialInfo{
+				{
+					Name:  "database-password",
+					Title: "Production Database Password",
+					Attributes: map[string]interface{}{
+						"environment": "production",
+						"owner":       "backend-team",
+						"rotation":    "monthly",
+					},
+				},
+			},
+			expectOutput: true,
+			expectedAttrs: map[string]string{
+				"title":       "Production Database Password",
+				"environment": "production",
+				"owner":       "backend-team",
+				"rotation":    "monthly",
+			},
+		},
+		{
+			name:          "No config attributes for unknown credential",
+			userInputName: "unknown-secret",
+			credentials: []CredentialInfo{
+				{Name: "other-secret", Title: "Other Secret"},
+			},
+			expectOutput: false,
+		},
+		{
+			name:          "Display title only for credential without attributes",
+			userInputName: "simple-secret",
+			credentials: []CredentialInfo{
+				{
+					Name:  "simple-secret",
+					Title: "Simple Secret Title",
+				},
+			},
+			expectOutput: true,
+			expectedAttrs: map[string]string{
+				"title": "Simple Secret Title",
+			},
+		},
+		{
+			name:          "Empty credentials list",
+			userInputName: "any-secret",
+			credentials:   []CredentialInfo{},
+			expectOutput:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Mock the global config
+			originalConfig := globalConfig
+			defer func() { globalConfig = originalConfig }()
+
+			globalConfig = &Config{
+				Credentials: tt.credentials,
+			}
+
+			// Note: This test would typically capture output, but since displayConfigAttributes
+			// prints directly to stdout, we're testing the logic indirectly through
+			// GetCredentialInfo and GetAttributeValue which are the core functions it uses.
+			cred := GetCredentialInfo(tt.userInputName)
+
+			if !tt.expectOutput {
+				if cred != nil {
+					t.Errorf("Expected no credential info but got %+v", cred)
+				}
+				return
+			}
+
+			if cred == nil {
+				t.Errorf("Expected credential info but got nil")
+				return
+			}
+
+			// Test that GetAttributeValue works correctly for expected attributes
+			for attr, expectedValue := range tt.expectedAttrs {
+				actualValue := GetAttributeValue(cred, attr)
+				if actualValue != expectedValue {
+					t.Errorf("GetAttributeValue(%+v, %q) = %q, expected %q",
+						cred, attr, actualValue, expectedValue)
+				}
+			}
+		})
+	}
+}
+
 // TestGetSecretInput tests secret input handling from various sources
 func TestGetSecretInput(t *testing.T) {
 	tests := []struct {

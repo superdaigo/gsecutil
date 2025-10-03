@@ -103,7 +103,7 @@ type SecretInfo struct {
 }
 
 // describeSecretWithVersions provides enhanced secret description with comprehensive information
-func describeSecretWithVersions(secretName, project string, showVersions bool) error {
+func describeSecretWithVersions(secretName, userInputName, project string, showVersions bool) error {
 	// Get basic secret information
 	gcloudArgs := []string{"secrets", "describe", secretName, "--format", "json"}
 	if project != "" {
@@ -131,7 +131,7 @@ func describeSecretWithVersions(secretName, project string, showVersions bool) e
 		fmt.Printf("Warning: Could not retrieve default version info: %v\n", err)
 	}
 
-	return displayEnhancedSecretInfo(secretInfo, defaultVersion, secretName, project, showVersions)
+	return displayEnhancedSecretInfo(secretInfo, defaultVersion, secretName, userInputName, project, showVersions)
 }
 
 // getDefaultVersionInfo retrieves information about the default (latest enabled) version
@@ -140,11 +140,14 @@ func getDefaultVersionInfo(secretName, project string) (*SecretVersionInfo, erro
 }
 
 // displayEnhancedSecretInfo displays comprehensive secret information
-func displayEnhancedSecretInfo(secretInfo SecretInfo, defaultVersion *SecretVersionInfo, secretName, project string, showVersions bool) error {
+func displayEnhancedSecretInfo(secretInfo SecretInfo, defaultVersion *SecretVersionInfo, secretName, userInputName, project string, showVersions bool) error {
 	// Basic information
 	fmt.Printf("Name: %s\n", secretInfo.Name)
 	fmt.Printf("Created: %s\n", secretInfo.CreateTime.Format(time.RFC3339))
 	fmt.Printf("ETag: %s\n", secretInfo.Etag)
+
+	// Config attributes (if available)
+	displayConfigAttributes(userInputName)
 
 	// Default version information
 	if defaultVersion != nil {
@@ -233,6 +236,34 @@ func displayEnhancedSecretInfo(secretInfo SecretInfo, defaultVersion *SecretVers
 	}
 
 	return nil
+}
+
+// displayConfigAttributes displays configuration attributes for the secret
+func displayConfigAttributes(userInputName string) {
+	// Look up credential info using the original user input name
+	credInfo := GetCredentialInfo(userInputName)
+	if credInfo == nil {
+		return // No config attributes available
+	}
+
+	fmt.Println("\nConfig Attributes:")
+
+	// Show title if available
+	if credInfo.Title != "" {
+		fmt.Printf("  title: %s\n", credInfo.Title)
+	}
+
+	// Show other attributes in sorted order
+	if len(credInfo.Attributes) > 0 {
+		keys := make([]string, 0, len(credInfo.Attributes))
+		for key := range credInfo.Attributes {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+		for _, key := range keys {
+			fmt.Printf("  %s: %v\n", key, credInfo.Attributes[key])
+		}
+	}
 }
 
 // extractVersionNumber extracts version number from full version name
