@@ -1,6 +1,8 @@
 # gsecutil - Google Secret Manager 实用工具
 
-> **翻译说明**: 此README文件为机器翻译。最新和准确的信息请参考英文版[README.md](README.md)。
+> **翻译说明**: 这个README文件是机器翻译的。最准确和最新的信息，请参考英语版[README.md](README.md)。
+>
+> **🆕 新功能**: v1.1.1添加了自动版本管理功能，以保持在Google Cloud免费层（6个活动版本）内。详情请参阅英语 README。
 
 🚀 **v1.1.0** - 带有配置文件支持的Google Secret Manager简化命令行包装器。`gsecutil`为常见的密钥操作提供便利命令，使小团队能够更轻松地使用Google Cloud的Secret Manager管理密码和凭据，而无需专门的密码管理工具。
 

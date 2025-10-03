@@ -343,3 +343,158 @@ func listSecretVersions(secretName, project string) error {
 
 	return nil
 }
+
+// VersionInfo represents a simplified version structure for version management
+type VersionInfo struct {
+	Number     string `json:"version_number"`
+	State      string `json:"state"`
+	CreateTime string `json:"createTime"`
+	Name       string `json:"name"`
+}
+
+// getActiveVersions returns all active (enabled) versions of a secret
+func getActiveVersions(secretName, project string) ([]VersionInfo, error) {
+	gcloudArgs := []string{"secrets", "versions", "list", secretName, "--format", "json", "--filter", "state=ENABLED"}
+	if project != "" {
+		gcloudArgs = append(gcloudArgs, "--project", project)
+	}
+
+	gcloudCmd := exec.Command("gcloud", gcloudArgs...)
+	output, err := gcloudCmd.Output()
+	if err != nil {
+		if exitError, ok := err.(*exec.ExitError); ok {
+			return nil, fmt.Errorf("gcloud command failed: %s", string(exitError.Stderr))
+		}
+		return nil, fmt.Errorf("failed to execute gcloud command: %w", err)
+	}
+
+	var versions []SecretVersionInfo
+	if err := json.Unmarshal(output, &versions); err != nil {
+		return nil, fmt.Errorf("failed to parse version list: %w", err)
+	}
+
+	// Convert to simplified format and extract version numbers
+	var activeVersions []VersionInfo
+	for _, v := range versions {
+		versionNumber := extractVersionNumber(v.Name)
+		activeVersions = append(activeVersions, VersionInfo{
+			Number:     versionNumber,
+			State:      v.State,
+			CreateTime: v.CreateTime.Format(time.RFC3339),
+			Name:       v.Name,
+		})
+	}
+
+	// Sort by creation time (oldest first for easier version management)
+	sort.Slice(activeVersions, func(i, j int) bool {
+		timeI, _ := time.Parse(time.RFC3339, activeVersions[i].CreateTime)
+		timeJ, _ := time.Parse(time.RFC3339, activeVersions[j].CreateTime)
+		return timeI.Before(timeJ)
+	})
+
+	return activeVersions, nil
+}
+
+// getDefaultVersion returns the default version number for a secret
+func getDefaultVersion(secretName, project string) (string, error) {
+	versionInfo, err := getSecretVersionInfo(secretName, "latest", project)
+	if err != nil {
+		return "", fmt.Errorf("failed to get default version: %w", err)
+	}
+	return extractVersionNumber(versionInfo.Name), nil
+}
+
+// disableVersion disables a specific version of a secret
+func disableVersion(secretName, versionNumber, project string) error {
+	gcloudArgs := []string{"secrets", "versions", "disable", versionNumber, "--secret", secretName}
+	if project != "" {
+		gcloudArgs = append(gcloudArgs, "--project", project)
+	}
+
+	gcloudCmd := exec.Command("gcloud", gcloudArgs...)
+	output, err := gcloudCmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to disable version %s: %s", versionNumber, string(output))
+	}
+
+	return nil
+}
+
+// manageVersionsForFreeTier checks active versions and manages them to stay within free tier limits
+// Returns true if operation should continue, false if user cancelled
+func manageVersionsForFreeTier(secretName, project string, force bool) (bool, error) {
+	activeVersions, err := getActiveVersions(secretName, project)
+	if err != nil {
+		return false, fmt.Errorf("failed to get active versions: %w", err)
+	}
+
+	// If we have fewer than 6 active versions, we're good
+	if len(activeVersions) < 6 {
+		return true, nil
+	}
+
+	// If force flag is set, skip version management
+	if force {
+		fmt.Printf("Warning: Secret '%s' currently has %d active versions (at/exceeds free tier limit of 6)\n", secretName, len(activeVersions))
+		fmt.Println("Proceeding due to --force flag. This may result in charges beyond the free tier.")
+		return true, nil
+	}
+
+	// Get default version to protect it from deletion
+	defaultVersion, err := getDefaultVersion(secretName, project)
+	if err != nil {
+		fmt.Printf("Warning: Could not determine default version: %v\n", err)
+		defaultVersion = ""
+	}
+
+	fmt.Printf("\nSecret '%s' currently has %d active versions.\n", secretName, len(activeVersions))
+	fmt.Println("The Google Cloud Secret Manager free tier allows up to 6 active versions.")
+	fmt.Println("Adding a new version would exceed this limit.")
+	if defaultVersion != "" {
+		fmt.Printf("Default version: %s (will be preserved)\n", defaultVersion)
+	}
+	fmt.Println("\nCurrent active versions (oldest first):")
+	for _, v := range activeVersions {
+		status := ""
+		if v.Number == defaultVersion {
+			status = " (default - will be preserved)"
+		}
+		fmt.Printf("  Version %s - Created: %s%s\n", v.Number, v.CreateTime, status)
+	}
+
+	fmt.Println("\nChoose an option:")
+	fmt.Println("  y/yes: Disable old versions to stay within free tier (recommended)")
+	fmt.Println("  N/no:  Proceed anyway, keeping all versions (may incur charges)")
+	fmt.Printf("Your choice (y/N): ")
+	var response string
+	fmt.Scanln(&response)
+	response = strings.ToLower(strings.TrimSpace(response))
+
+	if response != "y" && response != "yes" {
+		fmt.Println("Proceeding without disabling old versions. This may result in charges beyond the free tier.")
+		return true, nil
+	}
+
+	// Disable oldest versions until we have 5 active (leaving room for the new one)
+	versionsToDisable := len(activeVersions) - 5
+	disabledCount := 0
+
+	for i := 0; i < len(activeVersions) && disabledCount < versionsToDisable; i++ {
+		v := activeVersions[i]
+		// Skip the default version
+		if v.Number == defaultVersion {
+			fmt.Printf("Skipping version %s (default version)\n", v.Number)
+			continue
+		}
+
+		fmt.Printf("Disabling version %s...\n", v.Number)
+		err := disableVersion(secretName, v.Number, project)
+		if err != nil {
+			return false, fmt.Errorf("failed to disable version %s: %w", v.Number, err)
+		}
+		disabledCount++
+	}
+
+	fmt.Printf("Successfully disabled %d old versions. You can now proceed with the operation.\n\n", disabledCount)
+	return true, nil
+}

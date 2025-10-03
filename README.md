@@ -192,7 +192,22 @@ gsecutil create my-secret --data-file ./secret.txt
 
 # Create secret with labels
 gsecutil create my-secret --labels env=prod,team=backend
+
+# Force creation without version management (may exceed free tier)
+gsecutil create my-secret --data "value" --force
 ```
+
+**🆓 Free Tier Version Management:**
+
+Google Cloud Secret Manager's free tier allows up to 6 active secret versions. When creating a secret that already exists (adding a new version), `gsecutil` will:
+
+1. **Check version count**: If the secret already has 6 active versions
+2. **Show current versions**: Display all active versions with creation dates
+3. **Offer choices**:
+   - **Disable old versions** to stay within free tier (recommended)
+   - **Proceed anyway** keeping all versions (may incur charges)
+4. **Protect default version**: Never disables the current default/latest version
+5. **Bypass with --force**: Skip the check entirely if you know what you're doing
 
 #### Update Secret
 
@@ -207,6 +222,29 @@ gsecutil update my-secret --data "new-secret-value"
 
 # Update from file
 gsecutil update my-secret --data-file ./new-secret.txt
+
+# Force update without version management (may exceed free tier)
+gsecutil update my-secret --data "new-value" --force
+```
+
+**🆓 Free Tier Version Management:**
+
+Before updating a secret, `gsecutil` automatically checks if adding a new version would exceed the free tier limit of 6 active versions. If so, you'll see:
+
+```
+Secret 'my-secret' currently has 6 active versions.
+The Google Cloud Secret Manager free tier allows up to 6 active versions.
+Adding a new version would exceed this limit.
+
+Current active versions (oldest first):
+  Version 1 - Created: 2023-01-01T10:00:00Z
+  Version 2 - Created: 2023-01-02T10:00:00Z (default - will be preserved)
+  [...]
+
+Choose an option:
+  y/yes: Disable old versions to stay within free tier (recommended)
+  N/no:  Proceed anyway, keeping all versions (may incur charges)
+Your choice (y/N):
 ```
 
 #### Delete Secret

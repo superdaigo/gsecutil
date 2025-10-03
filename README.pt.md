@@ -1,6 +1,8 @@
 # gsecutil - Utilitário do Google Secret Manager
 
 > **Nota sobre a tradução**: Este arquivo README foi traduzido automaticamente. Para obter as informações mais atualizadas e precisas, consulte a versão em inglês [README.md](README.md).
+>
+> **🆕 Nova funcionalidade**: v1.1.1 adiciona gerenciamento automático de versões para permanecer dentro do nível gratuito do Google Cloud (6 versões ativas). Consulte o README em inglês para mais detalhes.
 
 🚀 **v1.1.0** - Um wrapper simplificado de linha de comando para Google Secret Manager com suporte a arquivos de configuração. `gsecutil` oferece comandos convenientes para operações comuns de segredos, facilitando que pequenas equipes gerenciem senhas e credenciais usando o Secret Manager do Google Cloud sem precisar de ferramentas dedicadas de gerenciamento de senhas.
 
