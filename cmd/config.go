@@ -121,7 +121,7 @@ func SetCustomConfigPath(path string) error {
 // GetProject returns the project ID from config, with priority order:
 // 1. CLI parameter (passed as argument)
 // 2. Configuration file
-// 3. Environment variable GOOGLE_CLOUD_PROJECT
+// 3. Environment variable GSECUTIL_PROJECT
 // 4. gcloud default project
 func GetProject(cliProject string) string {
 	// 1. CLI parameter has highest priority
@@ -136,7 +136,7 @@ func GetProject(cliProject string) string {
 	}
 
 	// 3. Environment variable
-	if envProject := os.Getenv("GOOGLE_CLOUD_PROJECT"); envProject != "" {
+	if envProject := os.Getenv("GSECUTIL_PROJECT"); envProject != "" {
 		return envProject
 	}
 

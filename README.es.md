@@ -102,7 +102,7 @@ make build-all
 
 ### Opciones Globales
 
-- `-p, --project`: ID del proyecto de Google Cloud (también se puede establecer mediante la variable de entorno `GOOGLE_CLOUD_PROJECT`)
+- `-p, --project`: ID del proyecto de Google Cloud (también se puede establecer mediante la variable de entorno `GSECUTIL_PROJECT`)
 
 ### Comandos
 
@@ -142,7 +142,7 @@ gsecutil get my-secret --project my-gcp-project
 
 ### Variables de Entorno
 
-- `GOOGLE_CLOUD_PROJECT`: ID del proyecto predeterminado (anulado por la bandera `--project`)
+- `GSECUTIL_PROJECT`: ID del proyecto predeterminado (anulado por la bandera `--project`)
 
 ### Autenticación
 
@@ -249,7 +249,7 @@ gsecutil get my-secret --<Tab>
 ### Mejores Prácticas
 
 - **Usar `--force` con cuidado**: Siempre revisar antes de usar `--force` en entornos automatizados
-- **Variables de entorno**: Establecer `GOOGLE_CLOUD_PROJECT` para evitar banderas repetitivas `--project`
+- **Variables de entorno**: Establecer `GSECUTIL_PROJECT` para evitar banderas repetitivas `--project`
 - **Control de versiones**: Usar versiones específicas de secretos en producción (`--version N`)
 - **Auditar regularmente**: Monitorear acceso a secretos con `gsecutil auditlog secret-name`
 - **Rotación de secretos**: Rotación regular de secretos usando `gsecutil update`
@@ -286,13 +286,8 @@ export CLOUDSDK_CORE_VERBOSITY=debug
 ## Documentación
 
 - **[BUILD.md](BUILD.md)** - Instrucciones de compilación completas para todas las plataformas
-- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Pautas de contribución y flujo de trabajo de desarrollo
 - **[WARP.md](WARP.md)** - Guía de desarrollo para integración con terminal WARP AI
 - **README.md** - Este archivo, uso y descripción general
-
-## Contribución
-
-¡Las contribuciones son bienvenidas! Consulta [CONTRIBUTING.md](CONTRIBUTING.md) para pautas detalladas sobre cómo contribuir a este proyecto, incluyendo instrucciones de configuración para el entorno de desarrollo y ganchos de pre-commit.
 
 ## Licencia
 

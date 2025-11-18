@@ -111,7 +111,7 @@ All secret operations are performed by spawning `gcloud` subprocesses:
 
 ### Testing Locally
 - Requires working gcloud installation and authentication
-- Set `GOOGLE_CLOUD_PROJECT` environment variable or use `--project` flag
+- Set `GSECUTIL_PROJECT` environment variable or use `--project` flag
 - Ensure Secret Manager API is enabled in the target GCP project
 - Test cross-platform builds using the build script or make targets
 

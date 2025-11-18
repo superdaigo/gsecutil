@@ -139,7 +139,7 @@ make build-all
 
 ### Global Options
 
-- `-p, --project`: Google Cloud project ID (can also be set via `GOOGLE_CLOUD_PROJECT` environment variable)
+- `-p, --project`: Google Cloud project ID (can also be set via `GSECUTIL_PROJECT` environment variable)
 - `--config`: Path to configuration file (default: `~/.config/gsecutil/gsecutil.conf`)
 
 ### Commands
@@ -423,7 +423,7 @@ gsecutil list --principal user:alice@example.com
 
 ```bash
 # Set your project (optional - can be done via flag each time)
-export GOOGLE_CLOUD_PROJECT=my-project-id
+export GSECUTIL_PROJECT=my-project-id
 
 # Create a new secret
 gsecutil create database-password
@@ -651,7 +651,7 @@ For complete configuration examples, see the [`examples/`](examples/) directory.
 
 ### Environment Variables
 
-- `GOOGLE_CLOUD_PROJECT`: Default project ID (overridden by `--project` flag)
+- `GSECUTIL_PROJECT`: Default project ID (overridden by `--project` flag)
 
 ### Authentication
 
@@ -758,7 +758,7 @@ gsecutil get my-secret --<Tab>
 ### Best Practices
 
 - **Use `--force` carefully**: Always review before using `--force` in automated environments
-- **Environment variables**: Set `GOOGLE_CLOUD_PROJECT` to avoid repetitive `--project` flags
+- **Environment variables**: Set `GSECUTIL_PROJECT` to avoid repetitive `--project` flags
 - **Version control**: Use specific secret versions in production (`--version N`)
 - **Audit regularly**: Monitor secret access with `gsecutil audit secret-name`
 - **Rotate secrets**: Regular secret rotation using `gsecutil update`
@@ -795,14 +795,9 @@ export CLOUDSDK_CORE_VERBOSITY=debug
 ## Documentation
 
 - **[BUILD.md](BUILD.md)** - Comprehensive build instructions for all platforms
-- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Contributing guidelines and development workflow
 - **[docs/configuration.md](docs/configuration.md)** - Detailed configuration file reference and examples
 - **[WARP.md](WARP.md)** - Development guidance for WARP AI terminal integration
 - **README.md** - This file, usage and overview
-
-## Contributing
-
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines on how to contribute to this project, including setup instructions for development environment and pre-commit hooks.
 
 ## License
 

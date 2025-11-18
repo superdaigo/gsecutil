@@ -34,7 +34,7 @@ Settings are resolved in the following order (highest to lowest priority):
 
 1. **Command line parameters** - `gsecutil --project my-project get secret`
 2. **Configuration file** - Settings in `gsecutil.conf`
-3. **Environment variables** - `GOOGLE_CLOUD_PROJECT`
+3. **Environment variables** - `GSECUTIL_PROJECT`
 4. **gcloud CLI default** - Output of `gcloud config get-value project`
 
 ## Configuration Format

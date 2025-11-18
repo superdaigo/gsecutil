@@ -102,7 +102,7 @@ make build-all
 
 ### 全局选项
 
-- `-p, --project`: Google Cloud项目ID（也可通过`GOOGLE_CLOUD_PROJECT`环境变量设置）
+- `-p, --project`: Google Cloud项目ID（也可通过`GSECUTIL_PROJECT`环境变量设置）
 
 ### 命令
 
@@ -142,7 +142,7 @@ gsecutil get my-secret --project my-gcp-project
 
 ### 环境变量
 
-- `GOOGLE_CLOUD_PROJECT`: 默认项目ID（被`--project`标志覆盖）
+- `GSECUTIL_PROJECT`: 默认项目ID（被`--project`标志覆盖）
 
 ### 认证
 
@@ -249,7 +249,7 @@ gsecutil get my-secret --<Tab>
 ### 最佳实践
 
 - **谨慎使用`--force`**: 在自动化环境中使用`--force`之前始终检查
-- **环境变量**: 设置`GOOGLE_CLOUD_PROJECT`以避免重复的`--project`标志
+- **环境变量**: 设置`GSECUTIL_PROJECT`以避免重复的`--project`标志
 - **版本控制**: 在生产环境中使用特定的密钥版本（`--version N`）
 - **定期审计**: 使用`gsecutil auditlog secret-name`监控密钥访问
 - **密钥轮换**: 使用`gsecutil update`进行定期密钥轮换
@@ -286,13 +286,12 @@ export CLOUDSDK_CORE_VERBOSITY=debug
 ## 文档
 
 - **[BUILD.md](BUILD.md)** - 所有平台的综合构建说明
-- **[CONTRIBUTING.md](CONTRIBUTING.md)** - 贡献指南和开发工作流程
 - **[WARP.md](WARP.md)** - WARP AI终端集成的开发指导
-- **README.md** - 此文件，使用方法和概述
+- **README.md** - 此文件,使用方法和概述
 
 ## 贡献
 
-欢迎贡献！有关如何为此项目做出贡献的详细指南，包括开发环境和预提交钩子的设置说明，请参见[CONTRIBUTING.md](CONTRIBUTING.md)。
+欢迎贡献！请随时提交拉取请求或提出问题。
 
 ## 许可证
 

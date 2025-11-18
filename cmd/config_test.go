@@ -655,8 +655,8 @@ func TestGetProject(t *testing.T) {
 
 			// Set environment variable
 			if tt.envVar != "" {
-				os.Setenv("GOOGLE_CLOUD_PROJECT", tt.envVar)
-				defer os.Unsetenv("GOOGLE_CLOUD_PROJECT")
+				os.Setenv("GSECUTIL_PROJECT", tt.envVar)
+				defer os.Unsetenv("GSECUTIL_PROJECT")
 			}
 
 			result := GetProject(tt.cliProject)

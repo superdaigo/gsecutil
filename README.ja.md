@@ -102,7 +102,7 @@ make build-all
 
 ### グローバルオプション
 
-- `-p, --project`: Google Cloudプロジェクト ID（`GOOGLE_CLOUD_PROJECT`環境変数でも設定可能）
+- `-p, --project`: Google Cloudプロジェクト ID（`GSECUTIL_PROJECT`環境変数でも設定可能）
 
 ### コマンド
 
@@ -142,7 +142,7 @@ gsecutil get my-secret --project my-gcp-project
 
 ### 環境変数
 
-- `GOOGLE_CLOUD_PROJECT`: デフォルトプロジェクトID（`--project`フラグで上書き）
+- `GSECUTIL_PROJECT`: デフォルトプロジェクトID（`--project`フラグで上書き）
 
 ### 認証
 
@@ -249,7 +249,7 @@ gsecutil get my-secret --<Tab>
 ### ベストプラクティス
 
 - **`--force`を慎重に使用**: 自動化環境で`--force`を使用する前は常にレビュー
-- **環境変数**: 繰り返しの`--project`フラグを避けるために`GOOGLE_CLOUD_PROJECT`を設定
+- **環境変数**: 繰り返しの`--project`フラグを避けるために`GSECUTIL_PROJECT`を設定
 - **バージョン制御**: 本番環境では特定の秘密バージョンを使用（`--version N`）
 - **定期的な監査**: `gsecutil auditlog secret-name`で秘密のアクセスを監視
 - **秘密のローテーション**: `gsecutil update`を使用した定期的な秘密のローテーション
@@ -286,13 +286,12 @@ export CLOUDSDK_CORE_VERBOSITY=debug
 ## ドキュメント
 
 - **[BUILD.md](BUILD.md)** - すべてのプラットフォームの包括的なビルド手順
-- **[CONTRIBUTING.md](CONTRIBUTING.md)** - 貢献ガイドラインと開発ワークフロー
 - **[WARP.md](WARP.md)** - WARP AIターミナル統合のための開発ガイダンス
 - **README.md** - このファイル、使用方法と概要
 
 ## 貢献
 
-貢献を歓迎します！このプロジェクトへの貢献方法、開発環境とpre-commitフックのセットアップ手順を含む詳細なガイドラインについては、[CONTRIBUTING.md](CONTRIBUTING.md)をご覧ください。
+貢献を歓迎します！プルリクエストや問題の提出を自由に行ってください。
 
 ## ライセンス
 
