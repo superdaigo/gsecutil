@@ -115,7 +115,13 @@ gsecutil delete old-secret
 
 ## Configuración
 
-Cree un archivo de configuración en `~/.config/gsecutil/gsecutil.conf`:
+gsecutil admite archivos de configuración para ajustes específicos del proyecto. Los archivos de configuración se buscan en este orden:
+
+1. Bandera `--config` (si se especifica)
+2. Directorio actual: `gsecutil.conf` o `.gsecutil.conf`
+3. Directorio de inicio: `~/.config/gsecutil/gsecutil.conf`
+
+### Ejemplo de configuración
 
 ```yaml
 # ID del proyecto (opcional si se establece mediante variable de entorno o gcloud)
@@ -139,9 +145,14 @@ credentials:
     owner: "backend-team"
 ```
 
-Generar configuración interactivamente:
+### Inicio rápido
+
 ```bash
+# Generar configuración interactivamente
 gsecutil config init
+
+# O crear una configuración específica del proyecto
+echo 'project: "my-project-123"' > gsecutil.conf
 ```
 
 Para opciones de configuración detalladas, consulte [docs/configuration.md](docs/configuration.md).

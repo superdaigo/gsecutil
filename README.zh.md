@@ -115,7 +115,13 @@ gsecutil delete old-secret
 
 ## 配置
 
-在 `~/.config/gsecutil/gsecutil.conf` 创建配置文件：
+gsecutil 支持项目特定设置的配置文件。配置文件按以下顺序搜索：
+
+1. `--config` 标志（如果指定）
+2. 当前目录：`gsecutil.conf` 或 `.gsecutil.conf`
+3. 主目录：`~/.config/gsecutil/gsecutil.conf`
+
+### 配置示例
 
 ```yaml
 # 项目 ID（如果通过环境变量或 gcloud 设置则为可选）
@@ -139,9 +145,14 @@ credentials:
     owner: "backend-team"
 ```
 
-交互式生成配置：
+### 快速开始
+
 ```bash
+# 交互式生成配置
 gsecutil config init
+
+# 或创建项目特定配置
+echo 'project: "my-project-123"' > gsecutil.conf
 ```
 
 有关详细的配置选项，请参阅 [docs/configuration.md](docs/configuration.md)。

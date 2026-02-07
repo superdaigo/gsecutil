@@ -115,7 +115,13 @@ gsecutil delete old-secret
 
 ## कॉन्फ़िगरेशन
 
-`~/.config/gsecutil/gsecutil.conf` पर एक कॉन्फ़िगरेशन फ़ाइल बनाएं:
+gsecutil प्रोजेक्ट-विशिष्ट सेटिंग्स के लिए कॉन्फ़िगरेशन फ़ाइलों का समर्थन करता है। कॉन्फ़िगरेशन फ़ाइलें इस क्रम में खोजी जाती हैं:
+
+1. `--config` फ्लैग (यदि निर्दिष्ट है)
+2. वर्तमान डाइरेक्टरी: `gsecutil.conf` या `.gsecutil.conf`
+3. होम डाइरेक्टरी: `~/.config/gsecutil/gsecutil.conf`
+
+### कॉन्फ़िगरेशन उदाहरण
 
 ```yaml
 # प्रोजेक्ट ID (यदि पर्यावरण या gcloud के माध्यम से सेट है तो वैकल्पिक)
@@ -139,9 +145,14 @@ credentials:
     owner: "backend-team"
 ```
 
-इंटरैक्टिव रूप से कॉन्फ़िगरेशन उत्पन्न करें:
+### त्वरित प्रारंभ
+
 ```bash
+# इंटरैक्टिव रूप से कॉन्फ़िगरेशन उत्पन्न करें
 gsecutil config init
+
+# या प्रोजेक्ट-विशिष्ट कॉन्फ़िग बनाएं
+echo 'project: "my-project-123"' > gsecutil.conf
 ```
 
 विस्तृत कॉन्फ़िगरेशन विकल्पों के लिए, [docs/configuration.md](docs/configuration.md) देखें।

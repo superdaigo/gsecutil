@@ -1,8 +1,8 @@
 # gsecutil - Utilitário do Google Secret Manager
 
-🚀 Um wrapper de linha de comando simplificado para o Google Secret Manager com suporte a arquivos de configuração e recursos amigáveis para equipes.
+🚀 Um wrapper de linha de comando simplificado para o Google Secret Manager com suporte a arquivo de configuração e recursos amigáveis para equipes.
 
-## 🌍 Versões de idioma
+## 🌍 Versões de Idioma
 
 - **English** - [README.md](README.md)
 - **日本語** - [README.ja.md](README.ja.md)
@@ -17,7 +17,7 @@
 
 ### Instalação
 
-Baixe o binário mais recente para sua plataforma na [página de lançamentos](https://github.com/superdaigo/gsecutil/releases):
+Baixe o binário mais recente para sua plataforma na [página de releases](https://github.com/superdaigo/gsecutil/releases):
 
 ```bash
 # macOS Apple Silicon
@@ -37,7 +37,7 @@ sudo mv gsecutil /usr/local/bin/
 
 # Windows (PowerShell)
 Invoke-WebRequest -Uri "https://github.com/superdaigo/gsecutil/releases/latest/download/gsecutil-windows-amd64.exe" -OutFile "gsecutil.exe"
-# Move to a directory in your PATH, e.g., C:\Windows\System32
+# Move para um diretório no seu PATH, por exemplo, C:\Windows\System32
 Move-Item gsecutil.exe C:\Windows\System32\gsecutil.exe
 ```
 
@@ -49,18 +49,18 @@ go install github.com/superdaigo/gsecutil@latest
 ### Pré-requisitos
 
 - [Google Cloud SDK (gcloud)](https://cloud.google.com/sdk/docs/install) instalado e autenticado
-- Projeto do Google Cloud com a API do Secret Manager ativada
+- Projeto do Google Cloud com a API do Secret Manager habilitada
 
 ### Autenticação
 
 ```bash
-# Autenticar com gcloud
+# Autentique com o gcloud
 gcloud auth login
 
-# Definir projeto padrão
+# Defina o projeto padrão
 gcloud config set project YOUR_PROJECT_ID
 
-# Ou definir variável de ambiente
+# Ou defina a variável de ambiente
 export GSECUTIL_PROJECT=YOUR_PROJECT_ID
 ```
 
@@ -80,7 +80,7 @@ gsecutil create config --data-file ./config.json
 
 ### Obter um Segredo
 ```bash
-# Obter versão mais recente
+# Obter a versão mais recente
 gsecutil get database-password
 
 # Copiar para a área de transferência
@@ -115,13 +115,19 @@ gsecutil delete old-secret
 
 ## Configuração
 
-Crie um arquivo de configuração em `~/.config/gsecutil/gsecutil.conf`:
+O gsecutil suporta arquivos de configuração para configurações específicas do projeto. Os arquivos de configuração são pesquisados nesta ordem:
+
+1. Flag `--config` (se especificada)
+2. Diretório atual: `gsecutil.conf` ou `.gsecutil.conf`
+3. Diretório home: `~/.config/gsecutil/gsecutil.conf`
+
+### Exemplo de Configuração
 
 ```yaml
-# ID do projeto (opcional se definido via variável de ambiente ou gcloud)
+# ID do projeto (opcional se definido via ambiente ou gcloud)
 project: "my-project-id"
 
-# Prefixo de nome de segredo para organização de equipe
+# Prefixo de nome de segredo para organização da equipe
 prefix: "team-shared-"
 
 # Atributos padrão para exibir no comando list
@@ -139,21 +145,26 @@ credentials:
     owner: "backend-team"
 ```
 
-Gerar configuração interativamente:
+### Início Rápido
+
 ```bash
+# Gerar configuração interativamente
 gsecutil config init
+
+# Ou criar configuração específica do projeto
+echo 'project: "my-project-123"' > gsecutil.conf
 ```
 
-Para opções de configuração detalhadas, consulte [docs/configuration.md](docs/configuration.md).
+Para opções detalhadas de configuração, consulte [docs/configuration.md](docs/configuration.md).
 
 ## Recursos Principais
 
 - ✅ **Operações CRUD Simples** - Comandos intuitivos para gerenciar segredos
-- ✅ **Integração com Área de Transferência** - Copiar segredos diretamente para a área de transferência
-- ✅ **Gerenciamento de Versões** - Acessar versões específicas e gerenciar o ciclo de vida das versões
-- ✅ **Suporte a Arquivos de Configuração** - Metadados e organização amigáveis para equipes
+- ✅ **Integração com Área de Transferência** - Copie segredos diretamente para a área de transferência
+- ✅ **Gerenciamento de Versões** - Acesse versões específicas e gerencie o ciclo de vida das versões
+- ✅ **Suporte a Arquivo de Configuração** - Metadados e organização amigáveis para equipes
 - ✅ **Gerenciamento de Acesso** - Gerenciamento básico de políticas IAM
-- ✅ **Logs de Auditoria** - Ver quem acessou os segredos e quando
+- ✅ **Logs de Auditoria** - Veja quem acessou segredos e quando
 - ✅ **Múltiplos Métodos de Entrada** - Interativo, inline ou baseado em arquivo
 - ✅ **Multiplataforma** - Linux, macOS, Windows (amd64/arm64)
 
@@ -161,9 +172,9 @@ Para opções de configuração detalhadas, consulte [docs/configuration.md](doc
 
 - **[Guia de Configuração](docs/configuration.md)** - Opções de configuração detalhadas e exemplos
 - **[Referência de Comandos](docs/commands.md)** - Documentação completa de comandos
-- **[Configuração de Logs de Auditoria](docs/audit-logging.md)** - Ativar e usar logs de auditoria
+- **[Configuração de Log de Auditoria](docs/audit-logging.md)** - Habilite e use logs de auditoria
 - **[Guia de Solução de Problemas](docs/troubleshooting.md)** - Problemas comuns e soluções
-- **[Instruções de Compilação](BUILD.md)** - Compilar do código-fonte
+- **[Instruções de Build](BUILD.md)** - Compilar a partir do código-fonte
 - **[Guia de Desenvolvimento](WARP.md)** - Desenvolvimento com WARP AI
 
 ## Comandos Comuns
@@ -193,7 +204,7 @@ gsecutil config show
 
 Este projeto está licenciado sob a Licença MIT - consulte o arquivo LICENSE para obter detalhes.
 
-## Relacionado
+## Links Relacionados
 
 - [Google Cloud SDK](https://cloud.google.com/sdk)
 - [Documentação do Secret Manager](https://cloud.google.com/secret-manager/docs)
