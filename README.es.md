@@ -1,152 +1,57 @@
 # gsecutil - Utilidad de Google Secret Manager
 
-> **Nota sobre la traducción**: Este archivo README ha sido traducido automáticamente. Para obtener la información más actualizada y precisa, consulte la versión en inglés [README.md](README.md).
->
-> **🆕 Nueva funcionalidad**: v1.1.1 agrega gestión automática de versiones para mantenerse dentro del nivel gratuito de Google Cloud (6 versiones activas). Consulte el README en inglés para más detalles.
+🚀 Un contenedor de línea de comandos simplificado para Google Secret Manager con soporte de archivos de configuración y funciones amigables para equipos.
 
-🚀 Un envoltorio simplificado de línea de comandos para Google Secret Manager con soporte para archivos de configuración. `gsecutil` proporciona comandos convenientes para operaciones comunes de secretos, facilitando que equipos pequeños gestionen contraseñas y credenciales usando Google Cloud Secret Manager sin necesidad de herramientas dedicadas de gestión de contraseñas.
+## 🌍 Versiones de idioma
 
-**NUEVO en v1.1.0**: Soporte para archivos de configuración YAML, funcionalidad de prefijos, y comandos mejorados de lista y descripción con metadatos personalizados del equipo.
+- **English** - [README.md](README.md)
+- **日本語** - [README.ja.md](README.ja.md)
+- **中文** - [README.zh.md](README.zh.md)
+- **Español** - [README.es.md](README.es.md) (actual)
+- **हिंदी** - [README.hi.md](README.hi.md)
+- **Português** - [README.pt.md](README.pt.md)
 
-## ✨ Características
+> **Nota**: Todas las versiones que no están en inglés son traducidas automáticamente. Para obtener la información más precisa, consulte la versión en inglés.
 
-### 🔐 **Gestión Completa de Secretos**
-- **Operaciones CRUD**: Crear, leer, actualizar, eliminar secretos con comandos simplificados
-- **Gestión de versiones**: Acceso a cualquier versión, visualizar historial de versiones y metadatos
-- **Soporte multiplataforma** (Linux, macOS, Windows con soporte ARM64)
-- **Integración de portapapeles** - copiar valores de secretos directamente al portapapeles
-- **Entrada interactiva y de archivos** - solicitudes seguras o carga de secretos basada en archivos
+## Inicio rápido
 
-### 🛡️ **Gestión Avanzada de Acceso**
-*(Introducido en v1.0.0)*
-- **Análisis completo de políticas IAM** - ver quién tiene acceso a secretos en cualquier nivel
-- **Verificación de permisos multinivel** - análisis de acceso a nivel de secreto y proyecto
-- **Reconocimiento de condiciones IAM** - soporte completo para políticas de acceso condicional con expresiones CEL
-- **Gestión de principales** - otorgar/revocar acceso para usuarios, grupos y cuentas de servicio
-- **Análisis de todo el proyecto** - identificar roles de Editor/Propietario que proporcionan acceso a Secret Manager
+### Instalación
 
-### 📊 **Auditoría y Cumplimiento**
-- **Registro de auditoría integral** - rastrear quién accedió a secretos, cuándo y qué operaciones
-- **Filtrado basado en principales** - ver todos los secretos accesibles por usuarios/grupos específicos
-- **Filtrado flexible** - por secreto, principal, tipo de operación, rango de tiempo
-- **Evaluación de condiciones** - entender cuándo se aplica el acceso condicional
-
-### 🎯 **Listo para Producción**
-- **API consistente** - nomenclatura unificada de parámetros en todos los comandos
-- **Características empresariales** - condiciones IAM, análisis a nivel de proyecto, auditoría de cumplimiento
-- **Manejo robusto de errores** - manejo elegante de permisos faltantes y problemas de red
-- **Salida flexible** - formatos JSON, YAML, tabla con formateo enriquecido
-
-## Prerrequisitos
-
-- [Google Cloud SDK (gcloud)](https://cloud.google.com/sdk/docs/install) instalado y autenticado
-- Proyecto de Google Cloud con la API de Secret Manager habilitada
-- Permisos IAM apropiados para operaciones de Secret Manager
-
-## Instalación
-
-### Binarios Precompilados
-
-Descarga la última versión para tu plataforma desde la [página de versiones](https://github.com/superdaigo/gsecutil/releases):
-
-| Plataforma | Arquitectura | Descarga |
-|----------|--------------|----------|
-| Linux | x64 | `gsecutil-linux-amd64-v{version}` |
-| Linux | ARM64 | `gsecutil-linux-arm64-v{version}` |
-| macOS | Intel | `gsecutil-darwin-amd64-v{version}` |
-| macOS | Apple Silicon | `gsecutil-darwin-arm64-v{version}` |
-| Windows | x64 | `gsecutil-windows-amd64-v{version}.exe` |
-
-**Después de la descarga:** Renombra el binario para uso consistente:
+Descargue el binario más reciente para su plataforma desde la [página de lanzamientos](https://github.com/superdaigo/gsecutil/releases):
 
 ```bash
-# Ejemplo Linux/macOS:
-mv gsecutil-linux-amd64-v1.1.0 gsecutil
+# macOS Apple Silicon
+curl -L https://github.com/superdaigo/gsecutil/releases/latest/download/gsecutil-darwin-arm64 -o gsecutil
 chmod +x gsecutil
+sudo mv gsecutil /usr/local/bin/
 
-# Ejemplo Windows (PowerShell/Command Prompt):
-ren gsecutil-windows-amd64-v1.1.0.exe gsecutil.exe
+# macOS Intel
+curl -L https://github.com/superdaigo/gsecutil/releases/latest/download/gsecutil-darwin-amd64 -o gsecutil
+chmod +x gsecutil
+sudo mv gsecutil /usr/local/bin/
+
+# Linux
+curl -L https://github.com/superdaigo/gsecutil/releases/latest/download/gsecutil-linux-amd64 -o gsecutil
+chmod +x gsecutil
+sudo mv gsecutil /usr/local/bin/
+
+# Windows (PowerShell)
+Invoke-WebRequest -Uri "https://github.com/superdaigo/gsecutil/releases/latest/download/gsecutil-windows-amd64.exe" -OutFile "gsecutil.exe"
+# Move to a directory in your PATH, e.g., C:\Windows\System32
+Move-Item gsecutil.exe C:\Windows\System32\gsecutil.exe
 ```
 
-Esto te permite usar `gsecutil` de manera consistente independientemente de la versión.
-
-### Instalar con Go
-
+O instalar con Go:
 ```bash
 go install github.com/superdaigo/gsecutil@latest
 ```
 
-### Compilar desde el Código Fuente
+### Requisitos previos
 
-Para instrucciones de compilación completas, consulta [BUILD.md](BUILD.md).
-
-**Compilación rápida:**
-```bash
-git clone https://github.com/superdaigo/gsecutil.git
-cd gsecutil
-
-# Compilar para la plataforma actual
-make build
-# O
-./build.sh          # Linux/macOS
-.\\build.ps1         # Windows
-
-# Compilar para todas las plataformas
-make build-all
-# O
-./build.sh all      # Linux/macOS
-.\\build.ps1 all     # Windows
-```
-
-## Uso
-
-### Opciones Globales
-
-- `-p, --project`: ID del proyecto de Google Cloud (también se puede establecer mediante la variable de entorno `GSECUTIL_PROJECT`)
-
-### Comandos
-
-#### Get Secret (Obtener Secreto)
-
-Recupera un valor de secreto de Google Secret Manager. Por defecto, obtiene la versión más reciente, pero puedes especificar cualquier versión:
-
-```bash
-# Obtener la versión más reciente de un secreto
-gsecutil get my-secret
-
-# Obtener versión específica (útil para rollbacks, depuración o acceso a valores históricos)
-gsecutil get my-secret --version 1
-gsecutil get my-secret -v 3
-
-# Obtener secreto y copiar al portapapeles
-gsecutil get my-secret --clipboard
-
-# Obtener versión específica con portapapeles
-gsecutil get my-secret --version 2 --clipboard
-
-# Obtener secreto con metadatos de versión (versión, tiempo de creación, estado)
-gsecutil get my-secret --show-metadata
-gsecutil get my-secret -v 1 --show-metadata    # Versión anterior con metadatos
-
-# Obtener secreto de proyecto específico
-gsecutil get my-secret --project my-gcp-project
-```
-
-**Soporte de Versiones:**
-- 🔄 **Versión más reciente**: Comportamiento predeterminado cuando no se especifica `--version`
-- 📅 **Versiones históricas**: Acceso a cualquier versión anterior por número (ej., `--version 1`, `--version 2`)
-- 🔍 **Metadatos de versión**: Usar `--show-metadata` para ver detalles de versión (tiempo de creación, estado, ETag)
-- 📋 **Soporte de portapapeles**: Funciona con cualquier versión usando `--clipboard`
-
-## Configuración
-
-### Variables de Entorno
-
-- `GSECUTIL_PROJECT`: ID del proyecto predeterminado (anulado por la bandera `--project`)
+- [Google Cloud SDK (gcloud)](https://cloud.google.com/sdk/docs/install) instalado y autenticado
+- Proyecto de Google Cloud con la API de Secret Manager habilitada
 
 ### Autenticación
-
-`gsecutil` usa la misma autenticación que `gcloud`. Asegúrate de estar autenticado:
 
 ```bash
 # Autenticar con gcloud
@@ -155,146 +60,140 @@ gcloud auth login
 # Establecer proyecto predeterminado
 gcloud config set project YOUR_PROJECT_ID
 
-# Para cuentas de servicio (en CI/CD)
-gcloud auth activate-service-account --key-file=service-account.json
+# O establecer variable de entorno
+export GSECUTIL_PROJECT=YOUR_PROJECT_ID
 ```
 
-### Autocompletado de Shell
+## Uso básico
 
-`gsecutil` soporta autocompletado de shell para bash, zsh, fish y PowerShell. Esto habilita el completado por tabulador para comandos, banderas y opciones, haciendo el CLI más fácil de usar.
-
-#### Instrucciones de Configuración
-
-**Bash:**
+### Crear un secreto
 ```bash
-# Temporal (solo sesión actual)
-source <(gsecutil completion bash)
+# Entrada interactiva
+gsecutil create database-password
 
-# Instalación permanente (requiere paquete bash-completion)
-# Sistema completo (requiere sudo)
-sudo gsecutil completion bash > /etc/bash_completion.d/gsecutil
+# Desde línea de comandos
+gsecutil create api-key -d "sk-1234567890"
 
-# Instalación local del usuario
-gsecutil completion bash > ~/.local/share/bash-completion/completions/gsecutil
-
-# O añadir a ~/.bashrc para carga automática
-echo 'source <(gsecutil completion bash)' >> ~/.bashrc
+# Desde archivo
+gsecutil create config --data-file ./config.json
 ```
 
-**Zsh:**
+### Obtener un secreto
 ```bash
-# Temporal (solo sesión actual)
-source <(gsecutil completion zsh)
+# Obtener última versión
+gsecutil get database-password
 
-# Instalación permanente
-gsecutil completion zsh > "${fpath[1]}/_gsecutil"
+# Copiar al portapapeles
+gsecutil get api-key --clipboard
 
-# O añadir a ~/.zshrc para carga automática
-echo 'source <(gsecutil completion zsh)' >> ~/.zshrc
+# Obtener versión específica
+gsecutil get api-key --version 2
 ```
 
-**Fish:**
+### Listar secretos
 ```bash
-# Temporal (solo sesión actual)
-gsecutil completion fish | source
+# Listar todos los secretos
+gsecutil list
 
-# Instalación permanente
-gsecutil completion fish > ~/.config/fish/completions/gsecutil.fish
+# Filtrar por etiqueta
+gsecutil list --filter "labels.env=prod"
 ```
 
-**PowerShell:**
-```powershell
-# Añadir al perfil de PowerShell
-gsecutil completion powershell | Out-String | Invoke-Expression
-
-# O guardar en perfil para carga automática
-gsecutil completion powershell >> $PROFILE
-```
-
-#### Características
-
-Una vez instalado, el autocompletado de shell proporciona:
-- **Completado de comandos**: Tab para completar subcomandos de `gsecutil` (`get`, `create`, `list`, etc.)
-- **Completado de banderas**: Tab para completar banderas como `--project`, `--version`, `--clipboard`
-- **Sugerencias inteligentes**: Completados conscientes del contexto basados en el comando actual
-- **Texto de ayuda**: Descripciones breves para comandos y banderas (donde sea soportado)
-
-#### Ejemplo de Uso
-
+### Actualizar un secreto
 ```bash
-# Escribe y presiona Tab para ver comandos disponibles
-gsecutil <Tab>
-# Muestra: access, auditlog, completion, create, delete, describe, get, help, list, update
+# Entrada interactiva
+gsecutil update database-password
 
-# Escribe comando parcial y presiona Tab para completar
-gsecutil des<Tab>
-# Completa a: gsecutil describe
-
-# El completado por tab también funciona para banderas
-gsecutil get my-secret --<Tab>
-# Muestra: --clipboard, --project, --show-metadata, --version
+# Desde línea de comandos
+gsecutil update api-key -d "new-secret-value"
 ```
 
-**Nota**: Es posible que necesites reiniciar tu shell o hacer source de tu archivo de configuración de shell para que el completado tome efecto.
-
-## Seguridad y Mejores Prácticas
-
-### Características de Seguridad
-
-- **Sin almacenamiento persistente**: Los valores de secretos nunca son registrados o almacenados por `gsecutil`
-- **Entrada segura**: Las solicitudes interactivas usan entrada de contraseña oculta
-- **Portapapeles nativo del SO**: Las operaciones de portapapeles usan APIs nativas seguras del SO
-- **Delegación gcloud**: Todas las operaciones se delegan al CLI `gcloud` autenticado
-
-### Mejores Prácticas
-
-- **Usar `--force` con cuidado**: Siempre revisar antes de usar `--force` en entornos automatizados
-- **Variables de entorno**: Establecer `GSECUTIL_PROJECT` para evitar banderas repetitivas `--project`
-- **Control de versiones**: Usar versiones específicas de secretos en producción (`--version N`)
-- **Auditar regularmente**: Monitorear acceso a secretos con `gsecutil auditlog secret-name`
-- **Rotación de secretos**: Rotación regular de secretos usando `gsecutil update`
-
-## Solución de Problemas
-
-### Problemas Comunes
-
-1. **"gcloud command not found"**
-   - Asegurar que Google Cloud SDK esté instalado y `gcloud` esté en tu PATH
-
-2. **Errores de autenticación**
-   - Ejecutar `gcloud auth login` para autenticar
-   - Verificar acceso al proyecto: `gcloud config get-value project`
-
-3. **Errores de permisos denegados**
-   - Asegurar que tu cuenta tenga los roles IAM necesarios:
-     - `roles/secretmanager.admin` (para todas las operaciones)
-     - `roles/secretmanager.secretAccessor` (para operaciones de lectura)
-     - `roles/secretmanager.secretVersionManager` (para operaciones de creación/actualización)
-
-4. **Portapapeles no funciona**
-   - Asegurar que tengas un entorno gráfico (para Linux)
-   - En servidores sin cabeza, las operaciones de portapapeles pueden fallar elegantemente
-
-### Modo de Depuración
-
-Añadir salida detallada a comandos gcloud estableciendo:
-
+### Eliminar un secreto
 ```bash
-export CLOUDSDK_CORE_VERBOSITY=debug
+gsecutil delete old-secret
 ```
+
+## Configuración
+
+Cree un archivo de configuración en `~/.config/gsecutil/gsecutil.conf`:
+
+```yaml
+# ID del proyecto (opcional si se establece mediante variable de entorno o gcloud)
+project: "my-project-id"
+
+# Prefijo de nombre de secreto para organización de equipo
+prefix: "team-shared-"
+
+# Atributos predeterminados para mostrar en el comando list
+list:
+  attributes:
+    - title
+    - owner
+    - environment
+
+# Metadatos de credenciales
+credentials:
+  - name: "database-password"
+    title: "Production Database Password"
+    environment: "production"
+    owner: "backend-team"
+```
+
+Generar configuración interactivamente:
+```bash
+gsecutil config init
+```
+
+Para opciones de configuración detalladas, consulte [docs/configuration.md](docs/configuration.md).
+
+## Características principales
+
+- ✅ **Operaciones CRUD simples** - Comandos intuitivos para gestionar secretos
+- ✅ **Integración con portapapeles** - Copiar secretos directamente al portapapeles
+- ✅ **Gestión de versiones** - Acceder a versiones específicas y gestionar el ciclo de vida de versiones
+- ✅ **Soporte de archivos de configuración** - Metadatos y organización amigables para equipos
+- ✅ **Gestión de acceso** - Gestión básica de políticas IAM
+- ✅ **Registros de auditoría** - Ver quién accedió a los secretos y cuándo
+- ✅ **Múltiples métodos de entrada** - Interactivo, en línea o basado en archivos
+- ✅ **Multiplataforma** - Linux, macOS, Windows (amd64/arm64)
 
 ## Documentación
 
-- **[BUILD.md](BUILD.md)** - Instrucciones de compilación completas para todas las plataformas
-- **[WARP.md](WARP.md)** - Guía de desarrollo para integración con terminal WARP AI
-- **README.md** - Este archivo, uso y descripción general
+- **[Guía de configuración](docs/configuration.md)** - Opciones de configuración detalladas y ejemplos
+- **[Referencia de comandos](docs/commands.md)** - Documentación completa de comandos
+- **[Configuración de registros de auditoría](docs/audit-logging.md)** - Habilitar y usar registros de auditoría
+- **[Guía de solución de problemas](docs/troubleshooting.md)** - Problemas comunes y soluciones
+- **[Instrucciones de compilación](BUILD.md)** - Compilar desde el código fuente
+- **[Guía de desarrollo](WARP.md)** - Desarrollo con WARP AI
+
+## Comandos comunes
+
+```bash
+# Mostrar detalles del secreto
+gsecutil describe my-secret
+
+# Mostrar historial de versiones
+gsecutil describe my-secret --show-versions
+
+# Ver registros de auditoría
+gsecutil auditlog my-secret
+
+# Gestionar acceso
+gsecutil access list my-secret
+gsecutil access grant my-secret --principal user:alice@example.com
+
+# Validar configuración
+gsecutil config validate
+
+# Mostrar configuración
+gsecutil config show
+```
 
 ## Licencia
 
-Este proyecto está licenciado bajo la Licencia MIT - consulta el archivo LICENSE para más detalles.
+Este proyecto está licenciado bajo la Licencia MIT; consulte el archivo LICENSE para más detalles.
 
-## Proyectos Relacionados
+## Relacionado
 
 - [Google Cloud SDK](https://cloud.google.com/sdk)
-- [Secret Manager Documentation](https://cloud.google.com/secret-manager/docs)
-- [Cobra CLI Framework](https://github.com/spf13/cobra)
+- [Documentación de Secret Manager](https://cloud.google.com/secret-manager/docs)
