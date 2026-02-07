@@ -120,3 +120,85 @@ All secret operations are performed by spawning `gcloud` subprocesses:
 - Add new fields to `SecretVersionInfo` or `SecretInfo` structs as needed
 - Update display formatting in relevant command files
 - All gcloud JSON output should be parsed rather than using text output for reliability
+
+## Version Management and Release Process
+
+### Pre-commit Hooks
+The repository includes a pre-commit hook that automatically runs before each commit:
+- **Location**: `.git/hooks/pre-commit`
+- **Checks performed**:
+  1. Code formatting with `gofmt -s -w`
+  2. Static analysis with `go vet`
+  3. All tests with `go test ./...`
+- The hook automatically formats code and stages changes if needed
+- To bypass the hook (not recommended): `git commit --no-verify`
+
+### Version Updates
+Version numbers are stored in the `VERSION` file at the repository root.
+
+**To update the version:**
+1. Edit the `VERSION` file directly:
+   ```bash
+   echo "1.3.0" > VERSION
+   ```
+2. Commit the version change:
+   ```bash
+   git add VERSION
+   git commit -m "chore: Bump version to 1.3.0
+   
+   Co-Authored-By: Warp <agent@warp.dev>"
+   git push origin main
+   ```
+
+### Creating Releases
+Use the `scripts/release.sh` script to create and publish releases. This script:
+- Validates the version format
+- Checks for uncommitted changes
+- Verifies you're on the main branch (optional)
+- Runs all tests
+- Shows changes since the last release
+- Creates an annotated git tag
+- Pushes the tag to trigger GitHub Actions release workflow
+
+**Usage:**
+```bash
+# Interactive mode (prompts for version)
+./scripts/release.sh
+
+# Specify version directly
+./scripts/release.sh 1.3.0
+
+# Pre-release versions
+./scripts/release.sh 2.0.0-beta.1
+./scripts/release.sh 1.3.0-rc.1
+```
+
+**The release script will:**
+1. Check prerequisites (clean working directory, on main branch)
+2. Show recent tags and changes since the last release
+3. Run all tests to ensure quality
+4. Prompt for confirmation
+5. Create and push the release tag
+6. Trigger GitHub Actions to build binaries for all platforms
+
+**GitHub Actions will automatically:**
+- Build binaries for Linux, macOS, Windows (amd64/arm64)
+- Generate SHA256 checksums
+- Create a GitHub release with all artifacts
+- Publish the release automatically
+
+**Monitor the release:**
+- Actions: `https://github.com/superdaigo/gsecutil/actions`
+- Release page: `https://github.com/superdaigo/gsecutil/releases/tag/vX.Y.Z`
+
+### Release Checklist
+Before creating a release:
+1. ✅ Update `VERSION` file
+2. ✅ Update documentation if needed (README, docs/)
+3. ✅ Update all language versions of README if changes are significant
+4. ✅ Run full test suite: `make test`
+5. ✅ Verify builds work: `make build-all`
+6. ✅ Commit and push all changes
+7. ✅ Run release script: `./scripts/release.sh X.Y.Z`
+8. ✅ Monitor GitHub Actions for successful build
+9. ✅ Verify release artifacts are published correctly
