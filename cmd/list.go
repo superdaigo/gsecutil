@@ -188,7 +188,6 @@ func displaySecretsSimple(secrets []SecretInfo) {
 	}
 }
 
-
 // formatLabels formats labels as key=value pairs separated by commas
 func formatLabels(labels map[string]string) string {
 	if len(labels) == 0 {

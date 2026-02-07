@@ -192,4 +192,3 @@ func prepareCsvRecords(secrets []SecretInfo, withValues bool, project string) []
 
 	return records
 }
-

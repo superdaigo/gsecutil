@@ -405,8 +405,8 @@ secret2,value2,Title 2,staging,bob`,
 			expectError:     true,
 		},
 		{
-			name: "CSV with header only",
-			csvContent: `name,value,title`,
+			name:            "CSV with header only",
+			csvContent:      `name,value,title`,
 			expectedHeader:  []string{"name", "value", "title"},
 			expectedRecords: 0,
 			expectError:     false,
@@ -448,7 +448,7 @@ secret2,value2,Title 2,staging,bob`,
 
 // Helper function to check if a string contains a substring
 func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(substr) == 0 || 
+	return len(s) >= len(substr) && (s == substr || len(substr) == 0 ||
 		(len(s) > 0 && len(substr) > 0 && stringContains(s, substr)))
 }
 
@@ -573,7 +573,7 @@ func TestSaveConfig(t *testing.T) {
 				Name:  "test-secret",
 				Title: "Test Secret",
 			},
-			},
+		},
 	}
 
 	// Save config
