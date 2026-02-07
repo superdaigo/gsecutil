@@ -75,22 +75,47 @@ func LoadConfig(customPath string) (*Config, error) {
 	return &config, nil
 }
 
-// getDefaultConfigPath returns the default configuration file path based on OS
+// getDefaultConfigPath returns the default configuration file path
+// Priority order:
+// 1. Current directory: gsecutil.conf or .gsecutil.conf
+// 2. Home directory: ~/.config/gsecutil/gsecutil.conf (or %USERPROFILE%\.config\gsecutil\gsecutil.conf on Windows)
 func getDefaultConfigPath() string {
+	// 1. Check current directory for gsecutil.conf
+	cwd, err := os.Getwd()
+	if err == nil {
+		// Try gsecutil.conf first
+		if path := filepath.Join(cwd, "gsecutil.conf"); fileExists(path) {
+			return path
+		}
+		// Try .gsecutil.conf (hidden file)
+		if path := filepath.Join(cwd, ".gsecutil.conf"); fileExists(path) {
+			return path
+		}
+	}
+
+	// 2. Default to home directory config
+	homeDir, _ := os.UserHomeDir()
 	var configDir string
 
 	switch runtime.GOOS {
 	case "windows":
 		// Use %USERPROFILE%\.config\gsecutil\gsecutil.conf on Windows
-		homeDir, _ := os.UserHomeDir()
 		configDir = filepath.Join(homeDir, ".config", "gsecutil")
 	default:
 		// Use $HOME/.config/gsecutil/gsecutil.conf on Unix-like systems
-		homeDir, _ := os.UserHomeDir()
 		configDir = filepath.Join(homeDir, ".config", "gsecutil")
 	}
 
 	return filepath.Join(configDir, "gsecutil.conf")
+}
+
+// fileExists checks if a file exists and is not a directory
+func fileExists(path string) bool {
+	info, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return err == nil && !info.IsDir()
 }
 
 // GetConfig returns the global configuration, loading it if not already loaded
