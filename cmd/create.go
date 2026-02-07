@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 
@@ -31,6 +32,7 @@ Use --force to bypass this check entirely.`,
 		dataFile, _ := cmd.Flags().GetString("data-file")
 		labels, _ := cmd.Flags().GetStringSlice("labels")
 		force, _ := cmd.Flags().GetBool("force")
+		title, _ := cmd.Flags().GetString("title")
 
 		// Get secret value
 		secretValue, err := getSecretInput(data, dataFile, "Enter secret value: ")
@@ -82,6 +84,16 @@ Use --force to bypass this check entirely.`,
 		}
 
 		fmt.Printf("Secret '%s' created successfully\n", secretName)
+
+		// Save title to config file if provided
+		if title != "" {
+			if err := saveTitleToConfig(secretName, title); err != nil {
+				fmt.Fprintf(os.Stderr, "Warning: Failed to save title to config: %v\n", err)
+			} else {
+				fmt.Printf("Title saved to configuration file\n")
+			}
+		}
+
 		return nil
 	},
 }
@@ -92,4 +104,17 @@ func init() {
 	createCmd.Flags().String("data-file", "", "Path to file containing secret data")
 	createCmd.Flags().StringSlice("labels", []string{}, "Labels to apply to the secret (format: key=value)")
 	createCmd.Flags().BoolP("force", "f", false, "Force creation without version limit checks (may exceed free tier)")
+	createCmd.Flags().StringP("title", "t", "", "Title for the secret (saved to config file)")
+}
+
+// saveTitleToConfig saves the secret title to the configuration file
+func saveTitleToConfig(secretName, title string) error {
+	config, err := loadOrCreateConfig()
+	if err != nil {
+		return err
+	}
+
+	updateConfigWithMetadata(config, secretName, title, nil)
+
+	return saveConfig(config)
 }
