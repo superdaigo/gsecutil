@@ -559,10 +559,15 @@ func TestSaveConfig(t *testing.T) {
 	defer os.Setenv("HOME", originalHome)
 	os.Setenv("HOME", tempDir)
 
-	// Reset global config
+	// Reset global config and configFilePath
 	originalConfig := globalConfig
-	defer func() { globalConfig = originalConfig }()
+	originalConfigPath := configFilePath
+	defer func() {
+		globalConfig = originalConfig
+		configFilePath = originalConfigPath
+	}()
 	globalConfig = nil
+	configFilePath = "" // Reset to empty so saveConfig uses default path
 
 	// Create test config
 	config := &Config{

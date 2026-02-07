@@ -102,6 +102,24 @@ All secret operations are performed by spawning `gcloud` subprocesses:
 
 ## Development Notes
 
+### Git Workflow
+
+**IMPORTANT: Do not commit or push changes without explicit user instruction.**
+
+When making code changes:
+1. Make the changes and verify they work (build, test)
+2. Show the changes to the user
+3. **Wait for explicit confirmation** before committing
+4. Only commit when user says "commit" or "push"
+5. Always include `Co-Authored-By: Warp <agent@warp.dev>` in commit messages
+
+The pre-commit hook will automatically run:
+- Code formatting (`gofmt`)
+- Static analysis (`go vet`)
+- All tests (`go test`)
+
+If any check fails, the commit will be aborted.
+
 ### Adding New Commands
 1. Create new file in `cmd/` directory (e.g., `cmd/newcommand.go`)
 2. Implement cobra command with `RunE` function
@@ -202,3 +220,36 @@ Before creating a release:
 7. ✅ Run release script: `./scripts/release.sh X.Y.Z`
 8. ✅ Monitor GitHub Actions for successful build
 9. ✅ Verify release artifacts are published correctly
+
+## Documentation Guidelines
+
+### Multilingual README Policy
+
+**English README (`README.md`) is the source of truth.**
+
+When updating README.md:
+1. **Always update English version first** - `README.md`
+2. **Machine translate to other languages** - Replace entire content with machine-translated version
+3. **Languages to update:**
+   - Japanese: `README.ja.md`
+   - Chinese: `README.zh.md`
+   - Spanish: `README.es.md`
+   - Hindi: `README.hi.md`
+   - Portuguese: `README.pt.md`
+
+**Translation approach:**
+- Use machine translation (e.g., built-in translation tools, LLM translation)
+- Completely replace the content - do NOT attempt to manually edit translations
+- Ensure all translated versions include the note: "All non-English versions are machine-translated"
+- Keep structure and formatting consistent with English version
+
+**When to update translations:**
+- Major feature additions or changes
+- Installation instructions changes
+- Configuration format changes
+- Before creating releases (if README changed)
+
+**When NOT to update:**
+- Minor typo fixes in English README
+- Small clarifications that don't affect usage
+- Internal link updates only

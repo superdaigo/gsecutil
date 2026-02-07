@@ -448,7 +448,13 @@ func updateConfigWithMetadata(config *Config, name, title string, attributes map
 }
 
 func saveConfig(config *Config) error {
-	configPath := getDefaultConfigPath()
+	// Use the path of the loaded config file, or default path if not loaded
+	// This ensures we write to the same file that was read
+	configPath := configFilePath
+	if configPath == "" {
+		// No config was loaded yet, use default path
+		configPath = getDefaultConfigPath()
+	}
 
 	// Create directory if it doesn't exist
 	configDir := filepath.Dir(configPath)
