@@ -26,6 +26,7 @@ Use --force to bypass this check entirely.`,
 		userInputName := args[0]                           // What the user typed
 		secretName := AddPrefixToSecretName(userInputName) // Add prefix if configured
 		project, _ := cmd.Flags().GetString("project")
+		project = GetProject(project) // Use configuration-based project resolution
 		data, _ := cmd.Flags().GetString("data")
 		dataFile, _ := cmd.Flags().GetString("data-file")
 		labels, _ := cmd.Flags().GetStringSlice("labels")

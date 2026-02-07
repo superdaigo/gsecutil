@@ -1,0 +1,4 @@
+name,title,owner,rotation_days,description,label:env,label:team
+myapp-db-password,Database Password,alice,30,Production database credentials,production,backend
+myapp-api-key,API Key,bob,90,Third-party service API key,production,frontend
+myapp-jwt-secret,JWT Secret,charlie,365,JWT signing key for authentication,production,backend

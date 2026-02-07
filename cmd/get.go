@@ -27,6 +27,7 @@ Examples:
 		userInputName := args[0]                           // What the user typed
 		secretName := AddPrefixToSecretName(userInputName) // Add prefix if configured
 		project, _ := cmd.Flags().GetString("project")
+		project = GetProject(project) // Use configuration-based project resolution
 		version, _ := cmd.Flags().GetString("version")
 		clipboard, _ := cmd.Flags().GetBool("clipboard")
 		showMetadata, _ := cmd.Flags().GetBool("show-metadata")
@@ -48,7 +49,7 @@ Examples:
 		output, err := gcloudCmd.Output()
 		if err != nil {
 			if exitError, ok := err.(*exec.ExitError); ok {
-				return fmt.Errorf("gcloud command failed: %s", string(exitError.Stderr))
+				return formatGcloudError(string(exitError.Stderr))
 			}
 			return fmt.Errorf("failed to execute gcloud command: %v", err)
 		}

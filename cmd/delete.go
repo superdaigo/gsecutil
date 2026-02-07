@@ -21,6 +21,7 @@ and all of its versions.`,
 		userInputName := args[0]                           // What the user typed
 		secretName := AddPrefixToSecretName(userInputName) // Add prefix if configured
 		project, _ := cmd.Flags().GetString("project")
+		project = GetProject(project) // Use configuration-based project resolution
 		force, _ := cmd.Flags().GetBool("force")
 
 		if !force {

@@ -32,17 +32,17 @@ $AllTargets = @(
 
 # Function to show help
 function Show-Help {
-    Write-Host "Usage: .\build.ps1 [target]" -ForegroundColor Cyan
+    Write-Host "Usage: .\\build.ps1 [target]" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "Available targets:" -ForegroundColor Blue
-    Write-Host "  default       - Build for current platform" -ForegroundColor Green
-    Write-Host "  all           - Build for all platforms" -ForegroundColor Green
+    Write-Host "  default       - Build for current platform (with debug info)" -ForegroundColor Green
+    Write-Host "  all           - Build for all platforms (release builds)" -ForegroundColor Green
     Write-Host "  clean         - Clean build directory" -ForegroundColor Green
-    Write-Host "  linux         - Build for Linux amd64" -ForegroundColor Green
-    Write-Host "  linux-arm64   - Build for Linux arm64" -ForegroundColor Green
-    Write-Host "  windows       - Build for Windows amd64" -ForegroundColor Green
-    Write-Host "  darwin        - Build for macOS amd64" -ForegroundColor Green
-    Write-Host "  darwin-arm64  - Build for macOS arm64" -ForegroundColor Green
+    Write-Host "  linux         - Build for Linux amd64 (release)" -ForegroundColor Green
+    Write-Host "  linux-arm64   - Build for Linux arm64 (release)" -ForegroundColor Green
+    Write-Host "  windows       - Build for Windows amd64 (release)" -ForegroundColor Green
+    Write-Host "  darwin        - Build for macOS amd64 (release)" -ForegroundColor Green
+    Write-Host "  darwin-arm64  - Build for macOS arm64 (release)" -ForegroundColor Green
     Write-Host "  test          - Run tests" -ForegroundColor Green
     Write-Host "  fmt           - Format code" -ForegroundColor Green
     Write-Host "  vet           - Run go vet" -ForegroundColor Green
@@ -148,21 +148,22 @@ function Build-All {
     }
 }
 
-# Function to build for current platform
+# Function to build for current platform (development build with debug info)
 function Build-Current {
-    Write-Host "Building $BinaryName v$Version for current platform" -ForegroundColor Blue
+    Write-Host "Building $BinaryName v$Version for current platform (with debug info)" -ForegroundColor Blue
     Create-BuildDir
 
     $OutputPath = Join-Path $BuildDir "$BinaryName.exe"
 
     try {
-        & go build -ldflags "-X main.Version=$Version -s -w" -o $OutputPath .
+        # Keep debug info for development builds (no -s -w flags)
+        & go build -ldflags "-X main.Version=$Version" -o $OutputPath .
 
         if ($LASTEXITCODE -ne 0) {
             throw "Build failed"
         }
 
-        Write-Host "✓ Built $BinaryName for current platform" -ForegroundColor Green
+        Write-Host "✓ Built $BinaryName for current platform (development build)" -ForegroundColor Green
         Show-BuildSummary
         return $true
     }

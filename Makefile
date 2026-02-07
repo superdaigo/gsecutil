@@ -10,7 +10,7 @@ VERSION?=$(shell cat VERSION 2>/dev/null || echo "1.0.0")
 BUILD_DIR=build
 
 # Targets
-.PHONY: all clean build build-linux build-windows build-darwin build-all test fmt vet
+.PHONY: all clean build build-linux build-windows build-darwin build-all test fmt vet lint
 
 all: build-all
 
@@ -19,35 +19,35 @@ clean:
 	rm -rf $(BUILD_DIR)
 	go clean
 
-# Build for current platform
+# Build for current platform (development build with debug info)
 build:
 	mkdir -p $(BUILD_DIR)
 	go build -ldflags "-X main.Version=$(VERSION)" -o $(BUILD_DIR)/$(BINARY_NAME) .
 
-# Build for Linux (amd64)
+# Build for Linux (amd64) - release build
 build-linux:
 	mkdir -p $(BUILD_DIR)
-	GOOS=linux GOARCH=amd64 go build -ldflags "-X main.Version=$(VERSION)" -o $(BUILD_DIR)/$(BINARY_NAME)-linux-amd64 .
+	GOOS=linux GOARCH=amd64 go build -ldflags "-X main.Version=$(VERSION) -s -w" -o $(BUILD_DIR)/$(BINARY_NAME)-linux-amd64 .
 
-# Build for Linux (arm64)
+# Build for Linux (arm64) - release build
 build-linux-arm64:
 	mkdir -p $(BUILD_DIR)
-	GOOS=linux GOARCH=arm64 go build -ldflags "-X main.Version=$(VERSION)" -o $(BUILD_DIR)/$(BINARY_NAME)-linux-arm64 .
+	GOOS=linux GOARCH=arm64 go build -ldflags "-X main.Version=$(VERSION) -s -w" -o $(BUILD_DIR)/$(BINARY_NAME)-linux-arm64 .
 
-# Build for Windows (amd64)
+# Build for Windows (amd64) - release build
 build-windows:
 	mkdir -p $(BUILD_DIR)
-	GOOS=windows GOARCH=amd64 go build -ldflags "-X main.Version=$(VERSION)" -o $(BUILD_DIR)/$(BINARY_NAME)-windows-amd64.exe .
+	GOOS=windows GOARCH=amd64 go build -ldflags "-X main.Version=$(VERSION) -s -w" -o $(BUILD_DIR)/$(BINARY_NAME)-windows-amd64.exe .
 
-# Build for macOS (amd64)
+# Build for macOS (amd64) - release build
 build-darwin:
 	mkdir -p $(BUILD_DIR)
-	GOOS=darwin GOARCH=amd64 go build -ldflags "-X main.Version=$(VERSION)" -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-amd64 .
+	GOOS=darwin GOARCH=amd64 go build -ldflags "-X main.Version=$(VERSION) -s -w" -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-amd64 .
 
-# Build for macOS (arm64)
+# Build for macOS (arm64) - release build
 build-darwin-arm64:
 	mkdir -p $(BUILD_DIR)
-	GOOS=darwin GOARCH=arm64 go build -ldflags "-X main.Version=$(VERSION)" -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-arm64 .
+	GOOS=darwin GOARCH=arm64 go build -ldflags "-X main.Version=$(VERSION) -s -w" -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-arm64 .
 
 # Build for all platforms
 build-all: build-linux build-linux-arm64 build-windows build-darwin build-darwin-arm64
@@ -63,6 +63,11 @@ fmt:
 # Run go vet
 vet:
 	go vet ./...
+
+# Run golangci-lint (if installed)
+lint:
+	@which golangci-lint > /dev/null || (echo "golangci-lint not installed. Install with: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest" && exit 1)
+	golangci-lint run
 
 # Install dependencies
 deps:
@@ -81,17 +86,18 @@ dev: build
 help:
 	@echo "Available targets:"
 	@echo "  all           - Build for all platforms (default)"
-	@echo "  build         - Build for current platform"
-	@echo "  build-linux   - Build for Linux amd64"
-	@echo "  build-linux-arm64 - Build for Linux arm64"
-	@echo "  build-windows - Build for Windows amd64"
-	@echo "  build-darwin  - Build for macOS amd64"
-	@echo "  build-darwin-arm64 - Build for macOS arm64"
-	@echo "  build-all     - Build for all platforms"
+	@echo "  build         - Build for current platform (with debug info)"
+	@echo "  build-linux   - Build for Linux amd64 (release)"
+	@echo "  build-linux-arm64 - Build for Linux arm64 (release)"
+	@echo "  build-windows - Build for Windows amd64 (release)"
+	@echo "  build-darwin  - Build for macOS amd64 (release)"
+	@echo "  build-darwin-arm64 - Build for macOS arm64 (release)"
+	@echo "  build-all     - Build for all platforms (release)"
 	@echo "  clean         - Clean build directory"
 	@echo "  test          - Run tests"
 	@echo "  fmt           - Format code"
 	@echo "  vet           - Run go vet"
+	@echo "  lint          - Run golangci-lint"
 	@echo "  deps          - Install dependencies"
 	@echo "  install       - Install locally"
 	@echo "  dev           - Development build and show help"

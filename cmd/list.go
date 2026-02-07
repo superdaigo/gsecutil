@@ -88,7 +88,7 @@ func runOriginalGcloudList(project, filter, format string, limit int) error {
 	output, err := gcloudCmd.Output()
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
-			return fmt.Errorf("gcloud command failed: %s", string(exitError.Stderr))
+			return formatGcloudError(string(exitError.Stderr))
 		}
 		return fmt.Errorf("failed to execute gcloud command: %v", err)
 	}
@@ -99,35 +99,9 @@ func runOriginalGcloudList(project, filter, format string, limit int) error {
 
 // listSecretsWithLabels lists secrets with enhanced formatting including labels
 func listSecretsWithLabels(project, filter string, limit int, showLabels bool) error {
-	// Build gcloud command to get JSON output
-	gcloudArgs := []string{"secrets", "list", "--format", "json"}
-
-	if project != "" {
-		gcloudArgs = append(gcloudArgs, "--project", project)
-	}
-
-	if filter != "" {
-		gcloudArgs = append(gcloudArgs, "--filter", filter)
-	}
-
-	if limit > 0 {
-		gcloudArgs = append(gcloudArgs, "--limit", fmt.Sprintf("%d", limit))
-	}
-
-	// Execute gcloud command
-	gcloudCmd := exec.Command("gcloud", gcloudArgs...)
-	output, err := gcloudCmd.Output()
+	secrets, err := fetchSecrets(project, filter, limit)
 	if err != nil {
-		if exitError, ok := err.(*exec.ExitError); ok {
-			return fmt.Errorf("gcloud command failed: %s", string(exitError.Stderr))
-		}
-		return fmt.Errorf("failed to execute gcloud command: %v", err)
-	}
-
-	// Parse JSON response
-	var secrets []SecretInfo
-	if err := json.Unmarshal(output, &secrets); err != nil {
-		return fmt.Errorf("failed to parse secrets list: %w", err)
+		return err
 	}
 
 	if len(secrets) == 0 {
@@ -136,9 +110,7 @@ func listSecretsWithLabels(project, filter string, limit int, showLabels bool) e
 	}
 
 	// Sort secrets by name for consistent output
-	sort.Slice(secrets, func(i, j int) bool {
-		return secrets[i].Name < secrets[j].Name
-	})
+	sortSecrets(secrets)
 
 	// Display secrets
 	if showLabels {
@@ -216,15 +188,6 @@ func displaySecretsSimple(secrets []SecretInfo) {
 	}
 }
 
-// extractSecretName extracts the secret name from the full resource name
-func extractSecretName(fullName string) string {
-	// Full name format: "projects/PROJECT_ID/secrets/SECRET_NAME"
-	parts := strings.Split(fullName, "/")
-	if len(parts) >= 4 {
-		return parts[3] // Return just the secret name
-	}
-	return fullName // Fallback to full name if parsing fails
-}
 
 // formatLabels formats labels as key=value pairs separated by commas
 func formatLabels(labels map[string]string) string {
@@ -255,26 +218,10 @@ func listSecretsForPrincipal(principal, project string, showLabels bool) error {
 		return err
 	}
 
-	// First, get all secrets in the project
-	gcloudArgs := []string{"secrets", "list", "--format", "json"}
-	if project != "" {
-		gcloudArgs = append(gcloudArgs, "--project", project)
-	}
-
-	// Execute gcloud command to get all secrets
-	gcloudCmd := exec.Command("gcloud", gcloudArgs...)
-	output, err := gcloudCmd.Output()
+	// Get all secrets in the project
+	allSecrets, err := fetchSecrets(project, "", 0)
 	if err != nil {
-		if exitError, ok := err.(*exec.ExitError); ok {
-			return fmt.Errorf("gcloud command failed: %s", string(exitError.Stderr))
-		}
-		return fmt.Errorf("failed to execute gcloud command: %v", err)
-	}
-
-	// Parse JSON response
-	var allSecrets []SecretInfo
-	if err := json.Unmarshal(output, &allSecrets); err != nil {
-		return fmt.Errorf("failed to parse secrets list: %w", err)
+		return err
 	}
 
 	if len(allSecrets) == 0 {
@@ -304,9 +251,7 @@ func listSecretsForPrincipal(principal, project string, showLabels bool) error {
 	}
 
 	// Sort secrets by name for consistent output
-	sort.Slice(accessibleSecrets, func(i, j int) bool {
-		return accessibleSecrets[i].Name < accessibleSecrets[j].Name
-	})
+	sortSecrets(accessibleSecrets)
 
 	fmt.Printf("Secrets accessible by '%s':\n\n", principal)
 
@@ -455,7 +400,7 @@ func listSecretsWithConfigAttributes(project, filter string, limit int, showAttr
 	output, err := gcloudCmd.Output()
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
-			return fmt.Errorf("gcloud command failed: %s", string(exitError.Stderr))
+			return formatGcloudError(string(exitError.Stderr))
 		}
 		return fmt.Errorf("failed to execute gcloud command: %v", err)
 	}
@@ -545,7 +490,7 @@ func listSecretsWithConfigFiltering(project, filter string, limit int, filterAtt
 	output, err := gcloudCmd.Output()
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
-			return fmt.Errorf("gcloud command failed: %s", string(exitError.Stderr))
+			return formatGcloudError(string(exitError.Stderr))
 		}
 		return fmt.Errorf("failed to execute gcloud command: %v", err)
 	}

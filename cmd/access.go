@@ -72,6 +72,7 @@ Examples:
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		project, _ := cmd.Flags().GetString("project")
+		project = GetProject(project) // Use configuration-based project resolution
 		includeProject, _ := cmd.Flags().GetBool("include-project")
 		userInputName := args[0]                           // What the user typed
 		secretName := AddPrefixToSecretName(userInputName) // Add prefix if configured
@@ -99,6 +100,7 @@ Examples:
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		project, _ := cmd.Flags().GetString("project")
+		project = GetProject(project) // Use configuration-based project resolution
 		principal, _ := cmd.Flags().GetString("principal")
 		role, _ := cmd.Flags().GetString("role")
 		userInputName := args[0]                           // What the user typed
@@ -126,6 +128,7 @@ Examples:
 	Args: cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		project, _ := cmd.Flags().GetString("project")
+		project = GetProject(project) // Use configuration-based project resolution
 		return showProjectLevelPermissions(project)
 	},
 }
@@ -150,6 +153,7 @@ Examples:
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		project, _ := cmd.Flags().GetString("project")
+		project = GetProject(project) // Use configuration-based project resolution
 		principal, _ := cmd.Flags().GetString("principal")
 		role, _ := cmd.Flags().GetString("role")
 		userInputName := args[0]                           // What the user typed
@@ -176,7 +180,7 @@ func listSecretAccess(secretName, project string, includeProject bool) error {
 	output, err := gcloudCmd.Output()
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
-			return fmt.Errorf("gcloud command failed: %s", string(exitError.Stderr))
+			return formatGcloudError(string(exitError.Stderr))
 		}
 		return fmt.Errorf("failed to execute gcloud command: %w", err)
 	}
@@ -219,7 +223,7 @@ func grantSecretAccess(secretName, principal, role, project string) error {
 	_, err := gcloudCmd.Output()
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
-			return fmt.Errorf("gcloud command failed: %s", string(exitError.Stderr))
+			return formatGcloudError(string(exitError.Stderr))
 		}
 		return fmt.Errorf("failed to execute gcloud command: %w", err)
 	}
@@ -254,7 +258,7 @@ func revokeSecretAccess(secretName, principal, role, project string) error {
 	_, err := gcloudCmd.Output()
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
-			return fmt.Errorf("gcloud command failed: %s", string(exitError.Stderr))
+			return formatGcloudError(string(exitError.Stderr))
 		}
 		return fmt.Errorf("failed to execute gcloud command: %w", err)
 	}
@@ -475,7 +479,7 @@ func showProjectLevelPermissions(project string) error {
 	output, err := gcloudCmd.Output()
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
-			return fmt.Errorf("gcloud command failed: %s", string(exitError.Stderr))
+			return formatGcloudError(string(exitError.Stderr))
 		}
 		return fmt.Errorf("failed to execute gcloud command: %w", err)
 	}

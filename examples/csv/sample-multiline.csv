@@ -1,0 +1,16 @@
+name,value,title,owner,description,label:env
+myapp-certificate,"-----BEGIN CERTIFICATE-----
+MIIBkTCB+wIJAKHHCgVZU6K9MA0GCSqGSIb3DQEBCwUAMBQxEjAQBgNVBAMMCWxv
+Y2FsaG9zdDAeFw0yMzAxMDEwMDAwMDBaFw0yNDAxMDEwMDAwMDBaMBQxEjAQBgNV
+BAMMCWxvY2FsaG9zdDBcMA0GCSqGSIb3DQEBAQUAA0sAMEgCQQC7
+-----END CERTIFICATE-----",TLS Certificate,security-team,Production TLS certificate,production
+myapp-config,"database:
+  host: localhost
+  port: 5432
+  name: myapp_db
+server:
+  port: 8080
+  timeout: 30s",Application Config,devops-team,Main application configuration file,production
+myapp-notes,"Line 1 of notes
+Line 2 of notes
+Line 3 of notes",Multi-line Notes,alice,Example of multi-line text field,development

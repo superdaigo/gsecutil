@@ -1,0 +1,6 @@
+name,value,title,owner,description,label:env,label:team
+myapp-db-password,super-secret-password,Database Password,alice,Production database credentials,production,backend
+myapp-api-key,abc123xyz789,API Key,bob,Third-party service API key,production,frontend
+myapp-jwt-secret,my-jwt-secret-key,JWT Secret,charlie,JWT signing key for authentication,production,backend
+staging-db-password,staging-pass,Staging DB Password,alice,Staging database credentials,staging,backend
+dev-api-key,dev-key-123,Development API Key,bob,Development environment API key,development,frontend

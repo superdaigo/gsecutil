@@ -16,6 +16,8 @@ around the gcloud CLI for managing Google Secret Manager secrets.
 It allows you to get, create, update, delete, list, and describe secrets
 with simplified commands, and also provides the ability to copy secret
 values directly to your clipboard.`,
+	SilenceErrors: true, // Prevent duplicate error printing
+	SilenceUsage:  true, // Don't show usage on every error
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

@@ -122,55 +122,6 @@ func TestParseSecretList(t *testing.T) {
 	}
 }
 
-// TestExtractSecretName tests secret name extraction from full paths
-func TestExtractSecretName(t *testing.T) {
-	tests := []struct {
-		name     string
-		fullName string
-		expected string
-	}{
-		{
-			name:     "Full path",
-			fullName: "projects/my-project/secrets/my-secret",
-			expected: "my-secret",
-		},
-		{
-			name:     "Already just the name",
-			fullName: "simple-secret",
-			expected: "simple-secret",
-		},
-		{
-			name:     "Empty string",
-			fullName: "",
-			expected: "",
-		},
-		{
-			name:     "Path with extra segments",
-			fullName: "projects/test/secrets/db-password/versions/1",
-			expected: "1", // This would return the last segment
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Extract using the same logic as in the actual command
-			parts := strings.Split(tt.fullName, "/")
-			var result string
-			if len(parts) >= 4 && parts[2] == "secrets" {
-				result = parts[3] // Extract the secret name specifically
-			} else if len(parts) > 0 {
-				result = parts[len(parts)-1] // Fallback to last segment
-			} else {
-				result = tt.fullName
-			}
-
-			if result != tt.expected && tt.name != "Path with extra segments" {
-				t.Errorf("extractSecretName(%q) = %q, expected %q", tt.fullName, result, tt.expected)
-			}
-		})
-	}
-}
-
 // TestFormatLabelsForDisplay tests label formatting for console output
 func TestFormatLabelsForDisplay(t *testing.T) {
 	tests := []struct {

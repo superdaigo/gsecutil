@@ -14,6 +14,14 @@ import (
 	"golang.org/x/term"
 )
 
+// formatGcloudError formats gcloud command errors in a clear, distinguishable way
+func formatGcloudError(stderr string) error {
+	return fmt.Errorf("gsecutil: Error executing gcloud command:\n"+
+		"────────────────────────────────────────\n"+
+		"%s\n"+
+		"────────────────────────────────────────", strings.TrimSpace(stderr))
+}
+
 // SecretVersionInfo represents version metadata from Google Secret Manager
 type SecretVersionInfo struct {
 	Name        string    `json:"name"`
@@ -65,7 +73,7 @@ func getSecretVersionInfo(secretName, version, project string) (*SecretVersionIn
 	output, err := gcloudCmd.Output()
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
-			return nil, fmt.Errorf("gcloud command failed: %s", string(exitError.Stderr))
+			return nil, formatGcloudError(string(exitError.Stderr))
 		}
 		return nil, fmt.Errorf("failed to execute gcloud command: %w", err)
 	}
@@ -114,7 +122,7 @@ func describeSecretWithVersions(secretName, userInputName, project string, showV
 	output, err := gcloudCmd.Output()
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
-			return fmt.Errorf("gcloud command failed: %s", string(exitError.Stderr))
+			return formatGcloudError(string(exitError.Stderr))
 		}
 		return fmt.Errorf("failed to execute gcloud command: %v", err)
 	}

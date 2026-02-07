@@ -67,6 +67,7 @@ Examples:
 		}
 
 		project, _ := cmd.Flags().GetString("project")
+		project = GetProject(project) // Use configuration-based project resolution
 		days, _ := cmd.Flags().GetInt("days")
 		limit, _ := cmd.Flags().GetInt("limit")
 		format, _ := cmd.Flags().GetString("format")
@@ -147,7 +148,7 @@ func executeLogQuery(project, filter string, limit int) ([]AuditLogEntry, error)
 	output, err := gcloudCmd.Output()
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
-			return nil, fmt.Errorf("gcloud command failed: %s", string(exitError.Stderr))
+			return nil, formatGcloudError(string(exitError.Stderr))
 		}
 		return nil, fmt.Errorf("failed to execute gcloud command: %v", err)
 	}

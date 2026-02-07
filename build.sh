@@ -23,14 +23,14 @@ show_help() {
     echo -e "${CYAN}Usage: $0 [target]${NC}"
     echo ""
     echo -e "${BLUE}Available targets:${NC}"
-    echo -e "  ${GREEN}default${NC}       - Build for current platform"
-    echo -e "  ${GREEN}all${NC}           - Build for all platforms"
+    echo -e "  ${GREEN}default${NC}       - Build for current platform (with debug info)"
+    echo -e "  ${GREEN}all${NC}           - Build for all platforms (release builds)"
     echo -e "  ${GREEN}clean${NC}         - Clean build directory"
-    echo -e "  ${GREEN}linux${NC}         - Build for Linux amd64"
-    echo -e "  ${GREEN}linux-arm64${NC}   - Build for Linux arm64"
-    echo -e "  ${GREEN}windows${NC}       - Build for Windows amd64"
-    echo -e "  ${GREEN}darwin${NC}        - Build for macOS amd64"
-    echo -e "  ${GREEN}darwin-arm64${NC}  - Build for macOS arm64"
+    echo -e "  ${GREEN}linux${NC}         - Build for Linux amd64 (release)"
+    echo -e "  ${GREEN}linux-arm64${NC}   - Build for Linux arm64 (release)"
+    echo -e "  ${GREEN}windows${NC}       - Build for Windows amd64 (release)"
+    echo -e "  ${GREEN}darwin${NC}        - Build for macOS amd64 (release)"
+    echo -e "  ${GREEN}darwin-arm64${NC}  - Build for macOS arm64 (release)"
     echo -e "  ${GREEN}test${NC}          - Run tests"
     echo -e "  ${GREEN}fmt${NC}           - Format code"
     echo -e "  ${GREEN}vet${NC}           - Run go vet"
@@ -127,22 +127,23 @@ build_all() {
     fi
 }
 
-# Function to build for current platform
+# Function to build for current platform (development build with debug info)
 build_current() {
-    echo -e "${BLUE}Building $BINARY_NAME v$VERSION for current platform${NC}"
-    create_build_dir
+	echo -e "${BLUE}Building $BINARY_NAME v$VERSION for current platform (with debug info)${NC}"
+	create_build_dir
 
-    # No GOOS/GOARCH specified means current platform
-    go build -ldflags "-X main.Version=$VERSION -s -w" -o "$BUILD_DIR/$BINARY_NAME" .
+	# No GOOS/GOARCH specified means current platform
+	# Keep debug info for development builds (no -s -w flags)
+	go build -ldflags "-X main.Version=$VERSION" -o "$BUILD_DIR/$BINARY_NAME" .
 
-    if [ $? -eq 0 ]; then
-        echo -e "${GREEN}✓ Built $BINARY_NAME for current platform${NC}"
-        show_build_summary
-        return 0
-    else
-        echo -e "${RED}✗ Failed to build $BINARY_NAME for current platform${NC}"
-        return 1
-    fi
+	if [ $? -eq 0 ]; then
+		echo -e "${GREEN}✓ Built $BINARY_NAME for current platform (development build)${NC}"
+		show_build_summary
+		return 0
+	else
+		echo -e "${RED}✗ Failed to build $BINARY_NAME for current platform${NC}"
+		return 1
+	fi
 }
 
 # Function to run tests
