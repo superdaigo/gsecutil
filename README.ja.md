@@ -115,7 +115,13 @@ gsecutil delete old-secret
 
 ## 設定
 
-`~/.config/gsecutil/gsecutil.conf` に設定ファイルを作成します：
+gsecutil はプロジェクト固有の設定のための設定ファイルをサポートしています。設定ファイルは次の順序で検索されます：
+
+1. `--config` フラグ（指定されている場合）
+2. カレントディレクトリ: `gsecutil.conf` または `.gsecutil.conf`
+3. ホームディレクトリ: `~/.config/gsecutil/gsecutil.conf`
+
+### 設定例
 
 ```yaml
 # プロジェクト ID（環境変数または gcloud で設定されている場合はオプション）
@@ -139,9 +145,14 @@ credentials:
     owner: "backend-team"
 ```
 
-対話的に設定を生成：
+### クイックスタート
+
 ```bash
+# 対話的に設定を生成
 gsecutil config init
+
+# またはプロジェクト固有の設定を作成
+echo 'project: "my-project-123"' > gsecutil.conf
 ```
 
 詳細な設定オプションについては、[docs/configuration.md](docs/configuration.md) を参照してください。

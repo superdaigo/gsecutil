@@ -9,19 +9,45 @@ gsecutil supports configuration files to make team secret management easier and 
 
 ## Configuration File Locations
 
-### Default Locations
+### Search Order
 
-gsecutil looks for configuration files in the following locations by default:
+gsecutil searches for configuration files in the following order (stops at first match):
 
-| Platform | Default Path |
-|----------|-------------|
+1. **Custom path** - Specified with `--config` flag
+2. **Current directory** - `gsecutil.conf` or `.gsecutil.conf`
+3. **Home directory** - Platform-specific default location
+
+| Platform | Home Directory Path |
+|----------|--------------------|
 | Linux | `$HOME/.config/gsecutil/gsecutil.conf` |
 | macOS | `$HOME/.config/gsecutil/gsecutil.conf` |
 | Windows | `%USERPROFILE%\.config\gsecutil\gsecutil.conf` |
 
+### Per-Project Configuration
+
+You can place a `gsecutil.conf` or `.gsecutil.conf` file in your project directory:
+
+```bash
+# Project structure
+my-project/
+├── gsecutil.conf          # Project-specific config
+├── src/
+└── README.md
+
+# Commands run from my-project/ automatically use local config
+cd my-project
+gsecutil list              # Uses ./gsecutil.conf
+```
+
+**Benefits of per-project configs:**
+- Different GCP projects per repository
+- Team can commit config to version control
+- No need to specify `--config` every time
+- Prevents accidental operations on wrong project
+
 ### Custom Location
 
-You can specify a custom configuration file using the `--config` flag:
+You can override the search order using the `--config` flag:
 
 ```bash
 gsecutil --config /path/to/custom/gsecutil.conf list
@@ -30,7 +56,15 @@ gsecutil --config C:\team\secrets\gsecutil.conf get my-secret
 
 ## Configuration Priority
 
-Settings are resolved in the following order (highest to lowest priority):
+### Config File Search Priority
+
+1. **`--config` flag** - Explicitly specified path
+2. **Current directory** - `gsecutil.conf` or `.gsecutil.conf`
+3. **Home directory** - `~/.config/gsecutil/gsecutil.conf`
+
+### Setting Value Priority
+
+Once a config file is found, settings are resolved in this order (highest to lowest):
 
 1. **Command line parameters** - `gsecutil --project my-project get secret`
 2. **Configuration file** - Settings in `gsecutil.conf`
