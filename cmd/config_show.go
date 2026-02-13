@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -69,10 +70,10 @@ func runConfigShow(cmd *cobra.Command, args []string) error {
 	fmt.Println("═══════════════════════════════════════════════════════════")
 	fmt.Println()
 
-	// Project
-	if config.Project != "" {
-		fmt.Printf("📦 Project ID:\n")
-		fmt.Printf("   %s\n", config.Project)
+	// Project with source indication
+	projectID, source := getProjectWithSource(cmd, &config)
+	if projectID != "" {
+		fmt.Printf("📦 Project ID: %s (%s)\n", projectID, source)
 		fmt.Println()
 	} else {
 		fmt.Println("📦 Project ID: (not set)")
@@ -125,6 +126,36 @@ func runConfigShow(cmd *cobra.Command, args []string) error {
 	fmt.Println("═══════════════════════════════════════════════════════════")
 
 	return nil
+}
+
+// getProjectWithSource returns the project ID and its source
+func getProjectWithSource(cmd *cobra.Command, config *Config) (string, string) {
+	// 1. Check --project flag
+	if projectFlag, _ := cmd.Flags().GetString("project"); projectFlag != "" {
+		return projectFlag, "from --project flag"
+	}
+
+	// 2. Check configuration file
+	if config.Project != "" {
+		return config.Project, "from config file"
+	}
+
+	// 3. Check environment variable
+	if envProject := os.Getenv("GSECUTIL_PROJECT"); envProject != "" {
+		return envProject, "from GSECUTIL_PROJECT env"
+	}
+
+	// 4. Check gcloud default
+	cmd2 := exec.Command("gcloud", "config", "get-value", "project")
+	output, err := cmd2.Output()
+	if err == nil {
+		gcloudProject := strings.TrimSpace(string(output))
+		if gcloudProject != "" && gcloudProject != "(unset)" {
+			return gcloudProject, "from gcloud default"
+		}
+	}
+
+	return "", ""
 }
 
 func displayCredentialsTable(config *Config) {

@@ -75,20 +75,15 @@ func LoadConfig(customPath string) (*Config, error) {
 	return &config, nil
 }
 
-// getDefaultConfigPath returns the default configuration file path
+// getDefaultConfigPath returns the default configuration file path.
 // Priority order:
-// 1. Current directory: gsecutil.conf or .gsecutil.conf
+// 1. Current directory: gsecutil.conf
 // 2. Home directory: ~/.config/gsecutil/gsecutil.conf (or %USERPROFILE%\.config\gsecutil\gsecutil.conf on Windows)
 func getDefaultConfigPath() string {
 	// 1. Check current directory for gsecutil.conf
 	cwd, err := os.Getwd()
 	if err == nil {
-		// Try gsecutil.conf first
 		if path := filepath.Join(cwd, "gsecutil.conf"); fileExists(path) {
-			return path
-		}
-		// Try .gsecutil.conf (hidden file)
-		if path := filepath.Join(cwd, ".gsecutil.conf"); fileExists(path) {
 			return path
 		}
 	}

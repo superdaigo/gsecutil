@@ -14,7 +14,7 @@ gsecutil supports configuration files to make team secret management easier and 
 gsecutil searches for configuration files in the following order (stops at first match):
 
 1. **Custom path** - Specified with `--config` flag
-2. **Current directory** - `gsecutil.conf` or `.gsecutil.conf`
+2. **Current directory** - `gsecutil.conf`
 3. **Home directory** - Platform-specific default location
 
 | Platform | Home Directory Path |
@@ -25,7 +25,7 @@ gsecutil searches for configuration files in the following order (stops at first
 
 ### Per-Project Configuration
 
-You can place a `gsecutil.conf` or `.gsecutil.conf` file in your project directory:
+You can place a `gsecutil.conf` file in your project directory:
 
 ```bash
 # Project structure
@@ -59,7 +59,7 @@ gsecutil --config C:\team\secrets\gsecutil.conf get my-secret
 ### Config File Search Priority
 
 1. **`--config` flag** - Explicitly specified path
-2. **Current directory** - `gsecutil.conf` or `.gsecutil.conf`
+2. **Current directory** - `gsecutil.conf`
 3. **Home directory** - `~/.config/gsecutil/gsecutil.conf`
 
 ### Setting Value Priority

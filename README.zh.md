@@ -118,7 +118,7 @@ gsecutil delete old-secret
 gsecutil 支持项目特定设置的配置文件。配置文件按以下顺序搜索：
 
 1. `--config` 标志（如果指定）
-2. 当前目录：`gsecutil.conf` 或 `.gsecutil.conf`
+2. 当前目录：`gsecutil.conf`
 3. 主目录：`~/.config/gsecutil/gsecutil.conf`
 
 ### 配置示例

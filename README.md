@@ -118,7 +118,7 @@ gsecutil delete old-secret
 gsecutil supports configuration files for project-specific settings. Config files are searched in this order:
 
 1. `--config` flag (if specified)
-2. Current directory: `gsecutil.conf` or `.gsecutil.conf`
+2. Current directory: `gsecutil.conf`
 3. Home directory: `~/.config/gsecutil/gsecutil.conf`
 
 ### Example Configuration

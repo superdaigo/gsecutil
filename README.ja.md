@@ -118,7 +118,7 @@ gsecutil delete old-secret
 gsecutil はプロジェクト固有の設定のための設定ファイルをサポートしています。設定ファイルは次の順序で検索されます：
 
 1. `--config` フラグ（指定されている場合）
-2. カレントディレクトリ: `gsecutil.conf` または `.gsecutil.conf`
+2. カレントディレクトリ: `gsecutil.conf`
 3. ホームディレクトリ: `~/.config/gsecutil/gsecutil.conf`
 
 ### 設定例
