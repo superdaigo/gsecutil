@@ -107,12 +107,15 @@ func runImport(cmd *cobra.Command, args []string) error {
 			continue
 		}
 
-		name := strings.TrimSpace(record[nameIdx])
-		if name == "" {
+		userInputName := strings.TrimSpace(record[nameIdx])
+		if userInputName == "" {
 			fmt.Printf("Warning: Row %d has empty name. Skipping.\n", i+2)
 			stats.skipped++
 			continue
 		}
+
+		// Add prefix to secret name if configured
+		name := AddPrefixToSecretName(userInputName)
 
 		value := ""
 		if valueIdx >= 0 {

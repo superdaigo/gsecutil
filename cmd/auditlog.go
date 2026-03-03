@@ -61,9 +61,15 @@ Examples:
 	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Get command arguments and flags
-		var secretName string
+		var userInputName string
 		if len(args) > 0 {
-			secretName = args[0]
+			userInputName = args[0]
+		}
+
+		// Add prefix to secret name if configured
+		var secretName string
+		if userInputName != "" {
+			secretName = AddPrefixToSecretName(userInputName)
 		}
 
 		project, _ := cmd.Flags().GetString("project")
