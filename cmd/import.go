@@ -15,7 +15,7 @@ import (
 )
 
 var importCmd = &cobra.Command{
-	Use:   "import <csv-file>",
+	Use:   "import CSV_FILE",
 	Short: "Import secrets from CSV file",
 	Long: `Import secrets from a CSV file.
 
@@ -35,7 +35,11 @@ By default, existing secrets are skipped. Use --update to update existing secret
 or --upsert to create new secrets and update existing ones.
 
 The --update-config flag will update the configuration file with titles and
-attributes from the CSV.`,
+attributes from the CSV.
+
+Prefix handling:
+When a prefix is configured, it is automatically prepended to all secret names
+from the CSV. The CSV file should contain bare names (without the prefix).`,
 	Example: `  gsecutil import secrets.csv
   gsecutil import secrets.csv --update
   gsecutil import secrets.csv --upsert
@@ -44,24 +48,21 @@ attributes from the CSV.`,
 	RunE: runImport,
 }
 
-var (
-	importUpdate       bool
-	importUpsert       bool
-	importDryRun       bool
-	importUpdateConfig bool
-)
-
 func init() {
 	rootCmd.AddCommand(importCmd)
-	importCmd.Flags().BoolVar(&importUpdate, "update", false, "Update existing secrets")
-	importCmd.Flags().BoolVar(&importUpsert, "upsert", false, "Create or update secrets (upsert)")
-	importCmd.Flags().BoolVar(&importDryRun, "dry-run", false, "Show what would be done without making changes")
-	importCmd.Flags().BoolVar(&importUpdateConfig, "update-config", false, "Update configuration file with metadata from CSV")
+	importCmd.Flags().Bool("update", false, "Update existing secrets")
+	importCmd.Flags().Bool("upsert", false, "Create or update secrets (upsert)")
+	importCmd.Flags().Bool("dry-run", false, "Show what would be done without making changes")
+	importCmd.Flags().Bool("update-config", false, "Update configuration file with metadata from CSV")
 }
 
 func runImport(cmd *cobra.Command, args []string) error {
 	project, _ := cmd.Flags().GetString("project")
 	project = GetProject(project)
+	importUpdate, _ := cmd.Flags().GetBool("update")
+	importUpsert, _ := cmd.Flags().GetBool("upsert")
+	importDryRun, _ := cmd.Flags().GetBool("dry-run")
+	importUpdateConfig, _ := cmd.Flags().GetBool("update-config")
 
 	csvFile := args[0]
 
@@ -114,8 +115,15 @@ func runImport(cmd *cobra.Command, args []string) error {
 			continue
 		}
 
-		// Add prefix to secret name if configured
-		name := AddPrefixToSecretName(userInputName)
+		// Strip prefix from CSV name if it exists (CSV should contain bare names)
+		// This ensures consistent handling regardless of whether users include prefix in CSV
+		bareName := userInputName
+		if prefix := GetPrefix(); prefix != "" && strings.HasPrefix(userInputName, prefix) {
+			bareName = strings.TrimPrefix(userInputName, prefix)
+		}
+
+		// Resolve the full secret name by adding prefix if configured
+		name := AddPrefixToSecretName(bareName)
 
 		value := ""
 		if valueIdx >= 0 {
@@ -150,8 +158,9 @@ func runImport(cmd *cobra.Command, args []string) error {
 		labels, title, attributes := extractColumnsData(header, record, nameIdx, valueIdx)
 
 		// Update config if requested
+		// Config stores credential names without prefix; use bare name
 		if importUpdateConfig && config != nil && !importDryRun {
-			updateConfigWithMetadata(config, name, title, attributes)
+			updateConfigWithMetadata(config, bareName, title, attributes)
 		}
 
 		// Perform action
@@ -163,7 +172,8 @@ func runImport(cmd *cobra.Command, args []string) error {
 				fmt.Printf("Error %sing secret '%s': %v\n", action, name, err)
 				stats.failed++
 			} else {
-				fmt.Printf("%s secret: %s\n", strings.Title(action+"d"), name)
+				actionDone := map[string]string{"create": "Created", "update": "Updated"}[action]
+				fmt.Printf("%s secret: %s\n", actionDone, name)
 				if action == "create" {
 					stats.created++
 				} else {

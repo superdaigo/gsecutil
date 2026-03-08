@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -606,12 +607,81 @@ func TestImportCommandPrefix(t *testing.T) {
 
 			globalConfig = &Config{Prefix: tt.prefix}
 
-			// Simulate import command behavior
+			// Simulate import command behavior with prefix stripping
 			userInputName := tt.userInput
-			secretName := AddPrefixToSecretName(userInputName)
+
+			// Strip prefix from CSV name if it exists
+			bareName := userInputName
+			if prefix := GetPrefix(); prefix != "" && strings.HasPrefix(userInputName, prefix) {
+				bareName = strings.TrimPrefix(userInputName, prefix)
+			}
+
+			// Then add prefix
+			secretName := AddPrefixToSecretName(bareName)
 
 			if secretName != tt.expectedName {
 				t.Errorf("Import command: expected %q, got %q", tt.expectedName, secretName)
+			}
+		})
+	}
+}
+
+// TestImportStripsPrefixFromCSV tests that import strips prefix from CSV names before processing
+func TestImportStripsPrefixFromCSV(t *testing.T) {
+	tests := []struct {
+		name         string
+		prefix       string
+		csvName      string
+		expectedName string
+	}{
+		{
+			name:         "CSV has bare name",
+			prefix:       "team-",
+			csvName:      "my-secret",
+			expectedName: "team-my-secret",
+		},
+		{
+			name:         "CSV accidentally includes prefix",
+			prefix:       "team-",
+			csvName:      "team-my-secret",
+			expectedName: "team-my-secret",
+		},
+		{
+			name:         "No prefix configured - name unchanged",
+			prefix:       "",
+			csvName:      "my-secret",
+			expectedName: "my-secret",
+		},
+		{
+			name:         "No prefix configured - name with dash unchanged",
+			prefix:       "",
+			csvName:      "team-my-secret",
+			expectedName: "team-my-secret",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			originalConfig := globalConfig
+			defer func() { globalConfig = originalConfig }()
+
+			globalConfig = &Config{Prefix: tt.prefix}
+
+			// This simulates the import command logic
+			userInputName := tt.csvName
+
+			// Step 1: Strip prefix if it exists in CSV (for consistent handling)
+			bareName := userInputName
+			if prefix := GetPrefix(); prefix != "" && strings.HasPrefix(userInputName, prefix) {
+				bareName = strings.TrimPrefix(userInputName, prefix)
+			}
+
+			// Step 2: Add prefix if configured
+			secretName := AddPrefixToSecretName(bareName)
+
+			if secretName != tt.expectedName {
+				t.Errorf("Expected %q, got %q (CSV=%q, prefix=%q)",
+					tt.expectedName, secretName, tt.csvName, tt.prefix)
 			}
 		})
 	}
