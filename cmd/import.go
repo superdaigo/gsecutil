@@ -37,9 +37,8 @@ or --upsert to create new secrets and update existing ones.
 The --update-config flag will update the configuration file with titles and
 attributes from the CSV.
 
-Prefix handling:
-When a prefix is configured, it is automatically prepended to all secret names
-from the CSV. The CSV file should contain bare names (without the prefix).`,
+Note: CSV names are used as-is (literally). If you have a configured prefix,
+you should include it in your CSV names to match your actual secret names.`,
 	Example: `  gsecutil import secrets.csv
   gsecutil import secrets.csv --update
   gsecutil import secrets.csv --upsert
@@ -115,15 +114,8 @@ func runImport(cmd *cobra.Command, args []string) error {
 			continue
 		}
 
-		// Strip prefix from CSV name if it exists (CSV should contain bare names)
-		// This ensures consistent handling regardless of whether users include prefix in CSV
-		bareName := userInputName
-		if prefix := GetPrefix(); prefix != "" && strings.HasPrefix(userInputName, prefix) {
-			bareName = strings.TrimPrefix(userInputName, prefix)
-		}
-
-		// Resolve the full secret name by adding prefix if configured
-		name := AddPrefixToSecretName(bareName)
+		// Use CSV name as-is (literal name from CSV)
+		name := userInputName
 
 		value := ""
 		if valueIdx >= 0 {
@@ -157,10 +149,9 @@ func runImport(cmd *cobra.Command, args []string) error {
 		// Extract labels and attributes
 		labels, title, attributes := extractColumnsData(header, record, nameIdx, valueIdx)
 
-		// Update config if requested
-		// Config stores credential names without prefix; use bare name
+		// Update config if requested (use CSV name as-is)
 		if importUpdateConfig && config != nil && !importDryRun {
-			updateConfigWithMetadata(config, bareName, title, attributes)
+			updateConfigWithMetadata(config, userInputName, title, attributes)
 		}
 
 		// Perform action

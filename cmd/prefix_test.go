@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"strings"
 	"testing"
 )
 
@@ -571,32 +570,32 @@ func TestImportCommandPrefix(t *testing.T) {
 	tests := []struct {
 		name         string
 		prefix       string
-		userInput    string
+		csvName      string
 		expectedName string
 	}{
 		{
-			name:         "Import - no prefix",
+			name:         "Import - CSV name used as-is (no prefix)",
 			prefix:       "",
-			userInput:    "imported-secret",
+			csvName:      "imported-secret",
 			expectedName: "imported-secret",
 		},
 		{
-			name:         "Import - with prefix",
+			name:         "Import - CSV name used as-is (with prefix configured)",
 			prefix:       "bulk-",
-			userInput:    "csv-secret",
-			expectedName: "bulk-csv-secret",
+			csvName:      "csv-secret",
+			expectedName: "csv-secret",
 		},
 		{
-			name:         "Import - already has prefix",
+			name:         "Import - CSV name includes prefix, used as-is",
 			prefix:       "batch-",
-			userInput:    "batch-import-key",
+			csvName:      "batch-import-key",
 			expectedName: "batch-import-key",
 		},
 		{
 			name:         "Import - complex name with special chars",
 			prefix:       "v2-",
-			userInput:    "api_key-prod",
-			expectedName: "v2-api_key-prod",
+			csvName:      "api_key-prod",
+			expectedName: "api_key-prod",
 		},
 	}
 
@@ -607,17 +606,9 @@ func TestImportCommandPrefix(t *testing.T) {
 
 			globalConfig = &Config{Prefix: tt.prefix}
 
-			// Simulate import command behavior with prefix stripping
-			userInputName := tt.userInput
-
-			// Strip prefix from CSV name if it exists
-			bareName := userInputName
-			if prefix := GetPrefix(); prefix != "" && strings.HasPrefix(userInputName, prefix) {
-				bareName = strings.TrimPrefix(userInputName, prefix)
-			}
-
-			// Then add prefix
-			secretName := AddPrefixToSecretName(bareName)
+			// Import command uses CSV name as-is (literally)
+			userInputName := tt.csvName
+			secretName := userInputName // CSV name is used literally
 
 			if secretName != tt.expectedName {
 				t.Errorf("Import command: expected %q, got %q", tt.expectedName, secretName)
@@ -626,37 +617,42 @@ func TestImportCommandPrefix(t *testing.T) {
 	}
 }
 
-// TestImportStripsPrefixFromCSV tests that import strips prefix from CSV names before processing
-func TestImportStripsPrefixFromCSV(t *testing.T) {
+// TestImportUsesLiteralCSVNames tests that import uses CSV names literally
+func TestImportUsesLiteralCSVNames(t *testing.T) {
 	tests := []struct {
 		name         string
 		prefix       string
 		csvName      string
 		expectedName string
+		description  string
 	}{
 		{
-			name:         "CSV has bare name",
-			prefix:       "team-",
-			csvName:      "my-secret",
-			expectedName: "team-my-secret",
+			name:         "CSV name 'sec1' remains 'sec1'",
+			prefix:       "pref-",
+			csvName:      "sec1",
+			expectedName: "sec1",
+			description:  "CSV name without prefix is used as-is",
 		},
 		{
-			name:         "CSV accidentally includes prefix",
-			prefix:       "team-",
-			csvName:      "team-my-secret",
-			expectedName: "team-my-secret",
+			name:         "CSV name 'pref-sec1' remains 'pref-sec1'",
+			prefix:       "pref-",
+			csvName:      "pref-sec1",
+			expectedName: "pref-sec1",
+			description:  "CSV name with prefix is used as-is",
+		},
+		{
+			name:         "Different secrets: 'sec1' vs 'pref-sec1'",
+			prefix:       "pref-",
+			csvName:      "sec1",
+			expectedName: "sec1",
+			description:  "These are different secrets",
 		},
 		{
 			name:         "No prefix configured - name unchanged",
 			prefix:       "",
 			csvName:      "my-secret",
 			expectedName: "my-secret",
-		},
-		{
-			name:         "No prefix configured - name with dash unchanged",
-			prefix:       "",
-			csvName:      "team-my-secret",
-			expectedName: "team-my-secret",
+			description:  "Without prefix, CSV name is used as-is",
 		},
 	}
 
@@ -667,21 +663,13 @@ func TestImportStripsPrefixFromCSV(t *testing.T) {
 
 			globalConfig = &Config{Prefix: tt.prefix}
 
-			// This simulates the import command logic
+			// Import uses CSV names literally (no prefix manipulation)
 			userInputName := tt.csvName
-
-			// Step 1: Strip prefix if it exists in CSV (for consistent handling)
-			bareName := userInputName
-			if prefix := GetPrefix(); prefix != "" && strings.HasPrefix(userInputName, prefix) {
-				bareName = strings.TrimPrefix(userInputName, prefix)
-			}
-
-			// Step 2: Add prefix if configured
-			secretName := AddPrefixToSecretName(bareName)
+			secretName := userInputName // Used as-is
 
 			if secretName != tt.expectedName {
-				t.Errorf("Expected %q, got %q (CSV=%q, prefix=%q)",
-					tt.expectedName, secretName, tt.csvName, tt.prefix)
+				t.Errorf("%s: Expected %q, got %q (CSV=%q, prefix=%q)",
+					tt.description, tt.expectedName, secretName, tt.csvName, tt.prefix)
 			}
 		})
 	}
