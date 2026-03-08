@@ -83,6 +83,7 @@ project: "my-team-project-123"
 
 # Secret name prefix (optional but recommended)
 # Only secrets with this prefix will be managed
+# Default when using 'config init': "team-shared-"
 prefix: "team-shared-"
 
 # List command configuration
@@ -92,13 +93,16 @@ list:
     - title
     - owner
     - environment
+    - description
 ```
 
 ### Credential Documentation
 
+Credential names in the config file are **bare names** (without the prefix). The prefix is transparent — you never include it in config entries or command arguments.
+
 ```yaml
 credentials:
-  - name: "team-shared-db-prod"
+  - name: "db-prod"        # bare name, NOT "team-shared-db-prod"
     title: "Production Database"
     description: "Main application database credentials"
     environment: "production"
@@ -127,21 +131,22 @@ When a `prefix` is specified in the configuration:
 
 ### 📋 Commands that show config attributes:
 - `gsecutil describe <secret>` - Shows all attributes defined in config file for the secret
-- `gsecutil list` - Shows attributes based on `list.attributes` config or `--show-attributes` parameter
+- `gsecutil list` - Shows attributes based on `list.attributes` config or `--show` parameter
 
 ### Examples with prefix "team-shared-":
 
 ```bash
-# These commands are equivalent when prefix is configured:
-gsecutil get db-prod
-gsecutil get team-shared-db-prod
-
-# Creating secrets automatically adds prefix:
-gsecutil create api-key  # Creates "team-shared-api-key"
+# Always use bare names — the prefix is added automatically:
+gsecutil get db-prod          # accesses "team-shared-db-prod"
+gsecutil create api-key       # creates "team-shared-api-key"
+gsecutil describe db-prod     # describes "team-shared-db-prod"
+gsecutil delete old-secret    # deletes "team-shared-old-secret"
 
 # List only shows team secrets:
 gsecutil list  # Only shows secrets starting with "team-shared-"
 ```
+
+**Note:** The prefix is always transparent. You never need to type or include the prefix in commands or configuration.
 
 ## List Command Configuration
 
@@ -153,20 +158,20 @@ Control which attributes are shown in the list output:
 
 ```bash
 # Show specific attributes (overrides config file)
-gsecutil list --show-attributes title,owner,environment
+gsecutil list --show title,owner,environment
 
 # Show only title and description
-gsecutil list --show-attributes title,description
+gsecutil list --show title,description
 
 # Show many attributes
-gsecutil list --show-attributes title,description,owner,environment,sensitive_level
+gsecutil list --show title,description,owner,environment,sensitive_level
 ```
 
 **Default behavior:**
 - If config file has `credentials` section: shows `title` by default
 - If no config file or no `credentials`: shows only secret names
 - Config file `list.attributes` section overrides default
-- `--show-attributes` parameter overrides everything
+- `--show` parameter overrides everything
 
 ## Describe Command Integration
 
@@ -205,16 +210,16 @@ Filter secrets based on attributes defined in your configuration:
 
 ```bash
 # Filter by environment (only shows secrets with this attribute value)
-gsecutil list --filter-attributes environment=production
+gsecutil list --attr-filter environment=production
 
 # Filter by owner
-gsecutil list --filter-attributes owner=backend-team
+gsecutil list --attr-filter owner=backend-team
 
 # Filter by multiple attributes
-gsecutil list --filter-attributes environment=production,sensitive_level=critical
+gsecutil list --attr-filter environment=production,sensitive_level=critical
 
 # Combine filtering with custom display
-gsecutil list --filter-attributes environment=production --show-attributes title,owner
+gsecutil list --attr-filter environment=production --show title,owner
 ```
 
 ## Common Attributes
@@ -242,7 +247,7 @@ Create a `gsecutil.conf` file for your team:
 project: "your-team-project"
 prefix: "team-"
 credentials:
-  - name: "team-db-prod"
+  - name: "db-prod"         # bare name (without prefix)
     title: "Production Database"
     description: "Main application database"
     owner: "backend-team"
@@ -274,10 +279,10 @@ All team members now have:
 project: "startup-secrets"
 prefix: "app-"
 credentials:
-  - name: "app-db"
+  - name: "db"              # creates/accesses "app-db"
     title: "Database Password"
     owner: "dev-team"
-  - name: "app-stripe"
+  - name: "stripe"          # creates/accesses "app-stripe"
     title: "Stripe API Key"
     owner: "dev-team"
 ```
@@ -288,11 +293,11 @@ credentials:
 project: "company-prod"
 prefix: "myteam-"
 credentials:
-  - name: "myteam-db-prod"
+  - name: "db-prod"         # creates/accesses "myteam-db-prod"
     title: "Production DB"
     environment: "production"
     owner: "backend"
-  - name: "myteam-db-staging"
+  - name: "db-staging"      # creates/accesses "myteam-db-staging"
     title: "Staging DB"
     environment: "staging"
     owner: "backend"
@@ -308,7 +313,7 @@ defaults:
     managed_by: "gsecutil"
     team: "platform"
 credentials:
-  - name: "platform-k8s-prod"
+  - name: "k8s-prod"        # creates/accesses "platform-k8s-prod"
     title: "Kubernetes Service Account"
     environment: "production"
     owner: "devops-team"
@@ -367,11 +372,11 @@ gsecutil --project my-project list
 
 ### Config attributes not showing in describe
 ```bash
-# Check if secret is in config file
-gsecutil config show | grep -A5 "team-db-prod"
+# Check if secret is in config file (use bare name — without prefix)
+gsecutil config show | grep -A5 "db-prod"
 
-# Verify secret name matches exactly (including prefix)
-gsecutil list --show-attributes title | grep "team-db-prod"
+# Verify secret exists and has attributes
+gsecutil list --show-attributes title
 
 # Check if config file is being loaded
 gsecutil config debug

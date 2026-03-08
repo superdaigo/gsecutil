@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
 
 var exportCmd = &cobra.Command{
-	Use:   "export [output-file]",
+	Use:   "export [OUTPUT_FILE]",
 	Short: "Export secrets to CSV file",
 	Long: `Export secrets and their metadata to a CSV file.
 
@@ -27,20 +28,17 @@ re-imported using the 'import' command.`,
 	RunE: runExport,
 }
 
-var (
-	exportWithValues bool
-	exportFilter     string
-)
-
 func init() {
 	rootCmd.AddCommand(exportCmd)
-	exportCmd.Flags().BoolVar(&exportWithValues, "with-values", false, "Include secret values in export (use with caution)")
-	exportCmd.Flags().StringVar(&exportFilter, "filter", "", "Filter secrets by label")
+	exportCmd.Flags().Bool("with-values", false, "Include secret values in export (use with caution)")
+	exportCmd.Flags().String("filter", "", "Filter secrets by label")
 }
 
 func runExport(cmd *cobra.Command, args []string) error {
 	project, _ := cmd.Flags().GetString("project")
 	project = GetProject(project)
+	exportWithValues, _ := cmd.Flags().GetBool("with-values")
+	exportFilter, _ := cmd.Flags().GetString("filter")
 
 	// Get list of secrets
 	secrets, err := fetchSecretsForExport(project, exportFilter)
@@ -91,6 +89,17 @@ func fetchSecretsForExport(project, filter string) ([]SecretInfo, error) {
 		return nil, err
 	}
 
+	// Filter by prefix if configured (consistent with list command)
+	if prefix := GetPrefix(); prefix != "" {
+		var filtered []SecretInfo
+		for _, s := range secrets {
+			if strings.HasPrefix(extractSecretName(s.Name), prefix) {
+				filtered = append(filtered, s)
+			}
+		}
+		secrets = filtered
+	}
+
 	// Sort by name
 	sortSecrets(secrets)
 
@@ -102,8 +111,10 @@ func prepareCsvRecords(secrets []SecretInfo, withValues bool, project string) []
 	labelKeys := make(map[string]bool)
 	configAttrs := make(map[string]bool)
 
+	prefix := GetPrefix()
 	for _, secret := range secrets {
 		name := extractSecretName(secret.Name)
+		credName := strings.TrimPrefix(name, prefix) // strip prefix for config lookup
 
 		// Collect label keys
 		for key := range secret.Labels {
@@ -111,7 +122,7 @@ func prepareCsvRecords(secrets []SecretInfo, withValues bool, project string) []
 		}
 
 		// Collect config attributes
-		if credInfo := GetCredentialInfo(name); credInfo != nil {
+		if credInfo := GetCredentialInfo(credName); credInfo != nil {
 			for key := range credInfo.Attributes {
 				configAttrs[key] = true
 			}
@@ -149,7 +160,8 @@ func prepareCsvRecords(secrets []SecretInfo, withValues bool, project string) []
 	// Build data rows
 	for _, secret := range secrets {
 		name := extractSecretName(secret.Name)
-		row := []string{name}
+		credName := strings.TrimPrefix(name, prefix) // strip prefix for config lookup
+		row := []string{credName}                    // export bare name (without prefix)
 
 		// Add value if requested
 		if withValues {
@@ -158,7 +170,7 @@ func prepareCsvRecords(secrets []SecretInfo, withValues bool, project string) []
 		}
 
 		// Add title from config
-		credInfo := GetCredentialInfo(name)
+		credInfo := GetCredentialInfo(credName)
 		if credInfo != nil && credInfo.Title != "" {
 			row = append(row, credInfo.Title)
 		} else {

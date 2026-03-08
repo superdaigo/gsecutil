@@ -16,7 +16,7 @@ var configValidateCmd = &cobra.Command{
 This command checks the configuration file for:
 - Valid YAML syntax
 - Valid configuration structure
-- Prefix format (no spaces)
+- Prefix format (letters, digits, hyphens, and underscores only)
 - No duplicate credential names
 - No empty credential names
 - Valid attribute references
@@ -73,17 +73,8 @@ func runConfigValidate(cmd *cobra.Command, args []string) error {
 	validationErrors := []string{}
 
 	// Validate prefix
-	if config.Prefix != "" {
-		hasSpace := false
-		for _, char := range config.Prefix {
-			if char == ' ' {
-				hasSpace = true
-				break
-			}
-		}
-		if hasSpace {
-			validationErrors = append(validationErrors, fmt.Sprintf("prefix contains spaces: '%s'", config.Prefix))
-		}
+	if err := validatePrefix(config.Prefix); err != nil {
+		validationErrors = append(validationErrors, err.Error())
 	}
 
 	// Validate credentials

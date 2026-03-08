@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"encoding/json"
+	"io"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -539,7 +541,7 @@ func TestDisplaySecretsWithConfigAttributes(t *testing.T) {
 	}()
 
 	// Call the function - this should work without panicking and include both custom and built-in fields
-	displaySecretsWithConfigAttributes(testSecrets, attributes)
+	displaySecretsWithConfigAttributes(testSecrets, attributes, true, false)
 
 	// Test width calculation logic separately
 	maxNameWidth := 4
@@ -573,6 +575,136 @@ func TestDisplaySecretsWithConfigAttributes(t *testing.T) {
 	}
 	if maxCreatedWidth < len("2023-06-15") {
 		t.Errorf("Created width should accommodate date format")
+	}
+}
+
+// captureStdout captures output written to os.Stdout during f()
+func captureStdout(f func()) string {
+	old := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+	f()
+	w.Close()
+	os.Stdout = old
+	var buf strings.Builder
+	io.Copy(&buf, r) //nolint:errcheck
+	return buf.String()
+}
+
+// TestFormatUpdateTime tests the formatUpdateTime helper function
+func TestFormatUpdateTime(t *testing.T) {
+	// Zero time should return "-"
+	if got := formatUpdateTime(time.Time{}); got != "-" {
+		t.Errorf("formatUpdateTime(zero) = %q, want %q", got, "-")
+	}
+
+	// Non-zero time should return formatted UTC string
+	ts := time.Date(2024, 3, 1, 10, 30, 0, 0, time.UTC)
+	if got, want := formatUpdateTime(ts), "2024-03-01 10:30"; got != want {
+		t.Errorf("formatUpdateTime(%v) = %q, want %q", ts, got, want)
+	}
+}
+
+// TestDisplaySecretsWithLabels_ShowUpdated verifies that the UPDATED column is
+// included only when showUpdated=true.
+func TestDisplaySecretsWithLabels_ShowUpdated(t *testing.T) {
+	ts := time.Date(2024, 3, 1, 10, 30, 0, 0, time.UTC)
+	secrets := []SecretInfo{
+		{
+			Name:              "projects/test/secrets/my-secret",
+			CreateTime:        time.Date(2023, 6, 15, 14, 30, 0, 0, time.UTC),
+			LatestVersionTime: ts,
+			Labels:            map[string]string{"env": "prod"},
+		},
+	}
+
+	// showUpdated=false: UPDATED column must NOT appear
+	out := captureStdout(func() { displaySecretsWithLabels(secrets, false) })
+	if strings.Contains(out, "UPDATED") {
+		t.Errorf("showUpdated=false: unexpected UPDATED column in output:\n%s", out)
+	}
+
+	// showUpdated=true: UPDATED column and formatted time must appear
+	out = captureStdout(func() { displaySecretsWithLabels(secrets, true) })
+	if !strings.Contains(out, "UPDATED (UTC)") {
+		t.Errorf("showUpdated=true: missing UPDATED (UTC) header in output:\n%s", out)
+	}
+	if !strings.Contains(out, "2024-03-01 10:30") {
+		t.Errorf("showUpdated=true: missing formatted update time in output:\n%s", out)
+	}
+}
+
+// TestDisplaySecretsWithLabels_ZeroUpdatedTime verifies that a secret without a
+// latest version time shows "-" in the UPDATED column.
+func TestDisplaySecretsWithLabels_ZeroUpdatedTime(t *testing.T) {
+	secrets := []SecretInfo{
+		{
+			Name:       "projects/test/secrets/no-version",
+			CreateTime: time.Date(2023, 6, 15, 14, 30, 0, 0, time.UTC),
+			// LatestVersionTime is zero — secret has never been accessed/enriched
+		},
+	}
+
+	out := captureStdout(func() { displaySecretsWithLabels(secrets, true) })
+	if !strings.Contains(out, " - ") && !strings.HasSuffix(strings.TrimSpace(out), "-") {
+		t.Errorf("expected dash for zero LatestVersionTime, got:\n%s", out)
+	}
+}
+
+// TestDisplaySecretsSimple_ShowUpdated verifies that the UPDATED column is
+// included only when showUpdated=true.
+func TestDisplaySecretsSimple_ShowUpdated(t *testing.T) {
+	ts := time.Date(2024, 3, 1, 10, 30, 0, 0, time.UTC)
+	secrets := []SecretInfo{
+		{
+			Name:              "projects/test/secrets/my-secret",
+			CreateTime:        time.Date(2023, 6, 15, 14, 30, 0, 0, time.UTC),
+			LatestVersionTime: ts,
+		},
+	}
+
+	// showUpdated=false: UPDATED column must NOT appear
+	out := captureStdout(func() { displaySecretsSimple(secrets, false) })
+	if strings.Contains(out, "UPDATED") {
+		t.Errorf("showUpdated=false: unexpected UPDATED column in output:\n%s", out)
+	}
+
+	// showUpdated=true: UPDATED column and formatted time must appear
+	out = captureStdout(func() { displaySecretsSimple(secrets, true) })
+	if !strings.Contains(out, "UPDATED (UTC)") {
+		t.Errorf("showUpdated=true: missing UPDATED (UTC) header in output:\n%s", out)
+	}
+	if !strings.Contains(out, "2024-03-01 10:30") {
+		t.Errorf("showUpdated=true: missing formatted update time in output:\n%s", out)
+	}
+}
+
+// TestDisplaySecretsWithConfigAttributes_ShowUpdated verifies that the UPDATED
+// column is included only when showUpdated=true.
+func TestDisplaySecretsWithConfigAttributes_ShowUpdated(t *testing.T) {
+	ts := time.Date(2024, 3, 1, 10, 30, 0, 0, time.UTC)
+	secrets := []SecretInfo{
+		{
+			Name:              "projects/test/secrets/my-secret",
+			CreateTime:        time.Date(2023, 6, 15, 14, 30, 0, 0, time.UTC),
+			LatestVersionTime: ts,
+		},
+	}
+	attributes := []string{"title"}
+
+	// showUpdated=false: UPDATED column must NOT appear
+	out := captureStdout(func() { displaySecretsWithConfigAttributes(secrets, attributes, false, false) })
+	if strings.Contains(out, "UPDATED") {
+		t.Errorf("showUpdated=false: unexpected UPDATED column in output:\n%s", out)
+	}
+
+	// showUpdated=true: UPDATED column and formatted time must appear
+	out = captureStdout(func() { displaySecretsWithConfigAttributes(secrets, attributes, false, true) })
+	if !strings.Contains(out, "UPDATED (UTC)") {
+		t.Errorf("showUpdated=true: missing UPDATED (UTC) header in output:\n%s", out)
+	}
+	if !strings.Contains(out, "2024-03-01 10:30") {
+		t.Errorf("showUpdated=true: missing formatted update time in output:\n%s", out)
 	}
 }
 

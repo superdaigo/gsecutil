@@ -6,7 +6,24 @@ import (
 	"os/exec"
 	"sort"
 	"strings"
+
+	"github.com/mattn/go-runewidth"
 )
+
+// displayWidth returns the terminal display width of a string, correctly
+// counting wide (CJK) characters as 2 columns.
+func displayWidth(s string) int {
+	return runewidth.StringWidth(s)
+}
+
+// padRight pads s to the given terminal display width with trailing spaces.
+func padRight(s string, width int) string {
+	sw := displayWidth(s)
+	if sw >= width {
+		return s
+	}
+	return s + strings.Repeat(" ", width-sw)
+}
 
 // extractSecretName extracts the secret name from the full resource name
 // Full name format: "projects/PROJECT_ID/secrets/SECRET_NAME"

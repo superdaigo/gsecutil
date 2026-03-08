@@ -87,7 +87,7 @@ Use --force to bypass this check entirely.`,
 
 		// Save title to config file if provided
 		if title != "" {
-			if err := saveTitleToConfig(secretName, title); err != nil {
+			if err := saveTitleToConfig(userInputName, title); err != nil {
 				fmt.Fprintf(os.Stderr, "Warning: Failed to save title to config: %v\n", err)
 			} else {
 				fmt.Printf("Title saved to configuration file\n")

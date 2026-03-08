@@ -89,12 +89,14 @@ func getSecretVersionInfo(secretName, version, project string) (*SecretVersionIn
 
 // SecretInfo represents comprehensive secret metadata
 type SecretInfo struct {
-	Name        string            `json:"name"`
-	CreateTime  time.Time         `json:"createTime"`
-	Labels      map[string]string `json:"labels"`
-	Annotations map[string]string `json:"annotations"`
-	Etag        string            `json:"etag"`
-	Replication struct {
+	Name              string            `json:"name"`
+	CreateTime        time.Time         `json:"createTime"`
+	UpdateTime        time.Time         `json:"updateTime"`
+	LatestVersionTime time.Time         `json:"-"` // populated separately from latest SecretVersion
+	Labels            map[string]string `json:"labels"`
+	Annotations       map[string]string `json:"annotations"`
+	Etag              string            `json:"etag"`
+	Replication       struct {
 		Automatic   interface{} `json:"automatic,omitempty"`
 		UserManaged interface{} `json:"userManaged,omitempty"`
 	} `json:"replication"`
@@ -248,8 +250,9 @@ func displayEnhancedSecretInfo(secretInfo SecretInfo, defaultVersion *SecretVers
 
 // displayConfigAttributes displays configuration attributes for the secret
 func displayConfigAttributes(userInputName string) {
-	// Look up credential info using the original user input name
-	credInfo := GetCredentialInfo(userInputName)
+	// Strip prefix before config lookup: config stores bare names
+	bareName := strings.TrimPrefix(userInputName, GetPrefix())
+	credInfo := GetCredentialInfo(bareName)
 	if credInfo == nil {
 		return // No config attributes available
 	}

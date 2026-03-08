@@ -48,24 +48,29 @@ func runConfigShow(cmd *cobra.Command, args []string) error {
 	}
 
 	// Check if file exists
-	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		return fmt.Errorf("configuration file does not exist: %s", configPath)
-	}
-
-	// Read file
-	data, err := os.ReadFile(configPath)
-	if err != nil {
-		return fmt.Errorf("failed to read configuration file: %w", err)
-	}
-
-	// Parse YAML
 	var config Config
-	if err := yaml.Unmarshal(data, &config); err != nil {
-		return fmt.Errorf("failed to parse configuration file: %w", err)
+	configExists := true
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		configExists = false
+	} else {
+		// Read file
+		data, err := os.ReadFile(configPath)
+		if err != nil {
+			return fmt.Errorf("failed to read configuration file: %w", err)
+		}
+
+		// Parse YAML
+		if err := yaml.Unmarshal(data, &config); err != nil {
+			return fmt.Errorf("failed to parse configuration file: %w", err)
+		}
 	}
 
 	// Display configuration
-	fmt.Printf("Configuration file: %s\n", configPath)
+	if configExists {
+		fmt.Printf("Configuration file: %s\n", configPath)
+	} else {
+		fmt.Printf("Configuration file: %s (not found)\n", configPath)
+	}
 	fmt.Println()
 	fmt.Println("═══════════════════════════════════════════════════════════")
 	fmt.Println()

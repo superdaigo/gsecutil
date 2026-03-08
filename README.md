@@ -137,13 +137,15 @@ list:
     - owner
     - environment
 
-# Credential metadata
+# Credential metadata (names are bare — prefix is added automatically)
 credentials:
-  - name: "database-password"
+  - name: "database-password"    # accesses "team-shared-database-password"
     title: "Production Database Password"
     environment: "production"
     owner: "backend-team"
 ```
+
+> **Prefix is transparent:** When a prefix is configured, you always use bare names in commands, config, and CSV files. The prefix is added and stripped automatically.
 
 ### Quick Start
 

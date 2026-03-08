@@ -10,7 +10,7 @@ import (
 )
 
 var configImportCmd = &cobra.Command{
-	Use:   "import <source-file>",
+	Use:   "import SOURCE_FILE",
 	Short: "Import configuration from an existing file",
 	Long: `Import configuration from an existing YAML configuration file.
 
@@ -110,13 +110,9 @@ func runConfigImport(cmd *cobra.Command, args []string) error {
 
 // validateConfig performs validation on configuration structure
 func validateConfig(config *Config) error {
-	// Validate prefix format (should not contain spaces)
-	if config.Prefix != "" {
-		for _, char := range config.Prefix {
-			if char == ' ' {
-				return fmt.Errorf("prefix cannot contain spaces: '%s'", config.Prefix)
-			}
-		}
+	// Validate prefix format
+	if err := validatePrefix(config.Prefix); err != nil {
+		return err
 	}
 
 	// Validate credentials

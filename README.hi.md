@@ -137,13 +137,15 @@ list:
     - owner
     - environment
 
-# क्रेडेंशियल मेटाडेटा
+# क्रेडेंशियल मेटाडेटा (नाम सादे हैं — प्रीफ़िक्स स्वचालित रूप से जोड़ा जाता है)
 credentials:
-  - name: "database-password"
+  - name: "database-password"    # "team-shared-database-password" तक पहुंचता है
     title: "Production Database Password"
     environment: "production"
     owner: "backend-team"
 ```
+
+> **प्रीफ़िक्स पारदर्शी है:** जब प्रीफ़िक्स कॉन्फ़िगर किया जाता है, तो कमांड, कॉन्फ़िग और CSV फ़ाइलों में हमेशा सादे नाम (बिना प्रीफ़िक्स के) का उपयोग करें। प्रीफ़िक्स स्वचालित रूप से जोड़ा और हटाया जाता है।
 
 ### त्वरित प्रारंभ
 

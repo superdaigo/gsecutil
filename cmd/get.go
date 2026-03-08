@@ -82,18 +82,10 @@ Examples:
 		if clipboard {
 			// Copy to clipboard
 			if err := copyToClipboard(secretValue); err != nil {
-				if showMetadata {
-					fmt.Printf("Secret Value: %s\n", secretValue)
-				} else {
-					fmt.Printf("Secret value: %s\n", secretValue)
-				}
+				fmt.Printf("Secret Value: %s\n", secretValue)
 				fmt.Printf("Warning: Failed to copy to clipboard: %v\n", err)
 			} else {
-				if showMetadata {
-					fmt.Println("Secret value copied to clipboard")
-				} else {
-					fmt.Println("Secret value copied to clipboard")
-				}
+				fmt.Println("Secret value copied to clipboard")
 			}
 		} else {
 			if showMetadata {

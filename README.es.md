@@ -137,13 +137,15 @@ list:
     - owner
     - environment
 
-# Metadatos de credenciales
+# Metadatos de credenciales (los nombres son simples — el prefijo se añade automáticamente)
 credentials:
-  - name: "database-password"
+  - name: "database-password"    # accede a "team-shared-database-password"
     title: "Production Database Password"
     environment: "production"
     owner: "backend-team"
 ```
+
+> **El prefijo es transparente:** Cuando se configura un prefijo, siempre se usan nombres simples (sin prefijo) en comandos, configuración y archivos CSV. El prefijo se añade y elimina automáticamente.
 
 ### Inicio rápido
 

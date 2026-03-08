@@ -80,19 +80,21 @@ The exported CSV includes:
 
 | Column | Description | Always Present |
 |--------|-------------|----------------|
-| `name` | Secret name | ✓ |
+| `name` | Secret name (bare, without prefix) | ✓ |
 | `value` | Secret value | Only with `--with-values` |
 | `title` | Title from config | ✓ |
 | `label:<key>` | Labels (e.g., `label:env`) | If labels exist |
 | Custom columns | Config attributes (e.g., `owner`) | If attributes exist |
 
-**Example CSV:**
+**Example CSV** (with prefix `myapp-` configured):
 
 ```csv
 name,title,label:env,label:team,owner,rotation_days
-myapp-db-password,Database Password,production,backend,alice,30
-myapp-api-key,API Key,production,frontend,bob,90
+db-password,Database Password,production,backend,alice,30
+api-key,API Key,production,frontend,bob,90
 ```
+
+> The `name` column contains bare names. When importing, the configured prefix is added automatically (e.g., `db-password` → `myapp-db-password`). When exporting, the prefix is stripped from names.
 
 ---
 
@@ -112,6 +114,8 @@ gsecutil import <csv-file> [flags]
 - `--update` - Update existing secrets only
 - `--upsert` - Create new secrets and update existing ones
 - `--update-config` - Save titles and attributes to configuration file
+
+**Prefix handling:** When a prefix is configured, it is automatically prepended to all names from the CSV. The CSV file must contain **bare names** (without the prefix).
 
 ### Update Modes
 
@@ -152,7 +156,7 @@ gsecutil import secrets.csv --upsert --update-config
 
 ### Required Columns
 
-- **`name`** - Secret name (required)
+- **`name`** - Secret name, **without prefix** (required)
 - **`value`** - Secret value (required for creation)
 
 ### Optional Columns
@@ -197,12 +201,12 @@ Error: CSV header contains duplicate column names: 'owner' (columns 3, 4)
 ### 1. Initial Bulk Import
 
 ```bash
-# Create secrets.csv with your data
+# Create secrets.csv with bare names (prefix "myapp-" is added automatically)
 cat > secrets.csv << 'EOF'
 name,value,title,label:env,owner
-myapp-db-prod,secret123,Production DB,production,alice
-myapp-db-stage,secret456,Staging DB,staging,alice
-myapp-api-key,key789,API Key,production,bob
+db-prod,secret123,Production DB,production,alice
+db-stage,secret456,Staging DB,staging,alice
+api-key,key789,API Key,production,bob
 EOF
 
 # Import with config update
@@ -237,11 +241,11 @@ gsecutil import current.csv --update
 ### 4. Metadata Management (Config-Only)
 
 ```bash
-# Create metadata CSV (no values)
+# Create metadata CSV with bare names (no values)
 cat > metadata.csv << 'EOF'
 name,title,owner,rotation_days,label:env
-myapp-db-password,Database Password,alice,30,production
-myapp-api-key,API Key,bob,90,production
+db-password,Database Password,alice,30,production
+api-key,API Key,bob,90,production
 EOF
 
 # Update config only
@@ -316,7 +320,7 @@ gpg --decrypt backup-20260207.csv.gpg | gsecutil import /dev/stdin --upsert
 
 ### Workflow
 
-1. **Maintain consistent labels**
+1. **Always use bare names** (without prefix) in CSV files
    ```csv
    name,value,label:env,label:team,label:app
    secret1,val1,production,backend,myapp
@@ -399,7 +403,7 @@ name,value,owner,created_by
 
 **Symptoms**: Line breaks lost or CSV parsing fails.
 
-**Fix**: 
+**Fix**:
 1. Ensure cells with line breaks are quoted
 2. Use Excel "CSV UTF-8" format
 3. Verify file encoding

@@ -168,12 +168,13 @@ gsecutil list [flags]
 
 **Flags:**
 - `--filter` - Filter expression for Secret Manager labels
-- `--filter-attributes` - Filter by config attributes (format: key=value,key2=value2)
+- `--attr-filter` - Filter by config attributes (format: key=value,key2=value2)
 - `--format` - Output format (json, yaml, table)
 - `--limit` - Maximum number of secrets to list
-- `--no-labels` - Hide labels in output
+- `--show-labels` - Show labels in output (default: true)
 - `--principal` - List secrets accessible by this principal
-- `--show-attributes` - Comma-separated attributes to display from config
+- `--show` - Comma-separated attributes to display from config
+- `--show-updated` - Show UPDATED column (slower, fetches latest version times)
 
 **Examples:**
 ```bash
@@ -184,10 +185,16 @@ gsecutil list
 gsecutil list --filter "labels.env=prod"
 
 # Filter by config attributes
-gsecutil list --filter-attributes "environment=production,owner=backend-team"
+gsecutil list --attr-filter "environment=production,owner=backend-team"
 
 # Show specific attributes
-gsecutil list --show-attributes "title,owner,environment"
+gsecutil list --show "title,owner,environment"
+
+# Hide labels
+gsecutil list --show-labels=false
+
+# Show updated times
+gsecutil list --show-updated
 
 # List with limit
 gsecutil list --limit 10
@@ -277,6 +284,7 @@ gsecutil import secrets.csv --upsert --update-config
 - Required columns: `name`, `value` (for creation)
 - Optional columns: `title`, `label:<key>`, custom attributes
 - Supports Excel multi-line cells
+- `name` column must contain **bare names** (without prefix); the prefix is added automatically
 
 **See Also:** [CSV Operations Guide](csv-operations.md) for detailed documentation.
 
@@ -327,13 +335,25 @@ gsecutil config init [flags]
 ```
 
 **Flags:**
-- `-o, --output` - Output path (default: ~/.config/gsecutil/gsecutil.conf)
+- `-o, --output` - Output path for configuration file
+- `--home` - Save to home directory (`~/.config/gsecutil/gsecutil.conf`)
 - `-f, --force` - Overwrite existing configuration
+
+**Default output path:** `./gsecutil.conf` in the current directory
+
+**Interactive Prompts:**
+1. **Google Cloud Project ID** - Optional; can be set later or resolved from environment
+2. **Secret name prefix** - Defaults to `team-shared-`; prompted whether to change (only letters, digits, hyphens, and underscores allowed)
+3. **Default list attributes** - Defaults to `title, owner, environment, description`
+4. **Example credential entries** - Optionally adds sample credentials to the config
 
 **Example:**
 ```bash
-# Interactive setup
+# Create config in current directory (default)
 gsecutil config init
+
+# Create config in home directory
+gsecutil config init --home
 
 # Custom output path
 gsecutil config init --output /path/to/config.yaml

@@ -376,15 +376,13 @@ func displayLogEntries(entries []AuditLogEntry, secretName, principalFilter, ope
 			resourceName = entry.ProtoPayload.Response.Name
 		}
 
-		// Shorten resource name for display
-		if len(resourceName) > 30 {
-			parts := strings.Split(resourceName, "/")
-			if len(parts) > 2 {
-				resourceName = ".../" + strings.Join(parts[len(parts)-2:], "/")
-			}
+		// Shorten resource name by replacing the heading part before the 3rd '/' with '...'
+		parts := strings.Split(resourceName, "/")
+		if len(parts) > 3 {
+			resourceName = "..." + "/" + strings.Join(parts[3:], "/")
 		}
 
-		fmt.Printf("%-20s %-30s %-40s %-30s\n", timestamp, operation, user, resourceName)
+		fmt.Printf("%-20s %-30s %-40s %s\n", timestamp, operation, user, resourceName)
 	}
 
 	fmt.Printf("\nTotal entries: %d\n", len(entries))
@@ -451,7 +449,7 @@ func init() {
 	rootCmd.AddCommand(auditlogCmd)
 	auditlogCmd.Flags().IntP("days", "d", 7, "Number of days to look back for audit logs")
 	auditlogCmd.Flags().IntP("limit", "l", 50, "Maximum number of log entries to retrieve")
-	auditlogCmd.Flags().String("format", "", "Output format (table, json)")
+	auditlogCmd.Flags().String("format", "", "Output format: table (default) or json")
 	auditlogCmd.Flags().String("principal", "", "Filter by principal/user (supports partial matching)")
 	auditlogCmd.Flags().StringP("operation", "o", "", "Filter by operations (comma-separated): ACCESS,CREATE,UPDATE,DELETE,GET_METADATA,LIST,UPDATE_METADATA,DESTROY_VERSION,DISABLE_VERSION,ENABLE_VERSION")
 }

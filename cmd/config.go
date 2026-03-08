@@ -69,6 +69,11 @@ func LoadConfig(customPath string) (*Config, error) {
 		return nil, fmt.Errorf("failed to parse config file '%s': %w", configPath, err)
 	}
 
+	// Validate prefix
+	if err := validatePrefix(config.Prefix); err != nil {
+		return nil, fmt.Errorf("config file %q: %w", configPath, err)
+	}
+
 	// Store the config path for reference
 	configFilePath = configPath
 
@@ -164,6 +169,20 @@ func GetProject(cliProject string) string {
 	return ""
 }
 
+// validatePrefix checks that a prefix contains only characters valid in GCP secret names.
+// GCP secret names allow only letters, digits, hyphens, and underscores.
+func validatePrefix(prefix string) error {
+	if prefix == "" {
+		return nil
+	}
+	for _, c := range prefix {
+		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '_') {
+			return fmt.Errorf("prefix %q contains invalid character %q: only letters, digits, hyphens (-), and underscores (_) are allowed", prefix, string(c))
+		}
+	}
+	return nil
+}
+
 // GetPrefix returns the secret name prefix from configuration
 func GetPrefix() string {
 	config := GetConfig()
@@ -187,14 +206,14 @@ func GetCredentialInfo(name string) *CredentialInfo {
 func GetListAttributes() []string {
 	config := GetConfig()
 
+	// Explicitly configured list.attributes always takes effect
+	if len(config.List.Attributes) > 0 {
+		return config.List.Attributes
+	}
+
 	// If no credentials defined, don't show attributes by default
 	if len(config.Credentials) == 0 {
 		return nil
-	}
-
-	// If list.attributes is configured, use it
-	if len(config.List.Attributes) > 0 {
-		return config.List.Attributes
 	}
 
 	// Default: show title if credentials exist

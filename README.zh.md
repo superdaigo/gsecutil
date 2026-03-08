@@ -137,13 +137,15 @@ list:
     - owner
     - environment
 
-# 凭据元数据
+# 凭据元数据（名称为裸名 — 前缀会自动添加）
 credentials:
-  - name: "database-password"
+  - name: "database-password"    # 访问 "team-shared-database-password"
     title: "Production Database Password"
     environment: "production"
     owner: "backend-team"
 ```
+
+> **前缀是透明的：** 配置了前缀时，在命令、配置和 CSV 文件中始终使用裸名（不含前缀）。前缀会被自动添加和删除。
 
 ### 快速开始
 

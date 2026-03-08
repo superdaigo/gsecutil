@@ -137,13 +137,15 @@ list:
     - owner
     - environment
 
-# Metadados de credenciais
+# Metadados de credenciais (nomes são simples — o prefixo é adicionado automaticamente)
 credentials:
-  - name: "database-password"
+  - name: "database-password"    # acessa "team-shared-database-password"
     title: "Production Database Password"
     environment: "production"
     owner: "backend-team"
 ```
+
+> **O prefixo é transparente:** Quando um prefixo é configurado, sempre use nomes simples (sem prefixo) em comandos, configuração e arquivos CSV. O prefixo é adicionado e removido automaticamente.
 
 ### Início Rápido
 

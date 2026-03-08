@@ -63,14 +63,14 @@ team-sendgrid-api  SendGrid API Key         platform-team   production       med
 
 ### List with custom attribute display
 ```bash
-$ gsecutil list --show-attributes title,owner
+$ gsecutil list --show title,owner
 NAME               TITLE                    OWNER
 team-db-prod       Production Database      backend-team
 team-db-staging    Staging Database         backend-team
 team-stripe-live   Stripe Live API Key      payments-team
 team-sendgrid-api  SendGrid API Key         platform-team
 
-$ gsecutil list --show-attributes title,vendor
+$ gsecutil list --show title,vendor
 NAME               TITLE                    VENDOR
 team-db-prod       Production Database      (none)
 team-db-staging    Staging Database         (none)
@@ -80,23 +80,23 @@ team-sendgrid-api  SendGrid API Key         SendGrid
 
 ### List with attribute filtering
 ```bash
-$ gsecutil list --filter-attributes environment=production
+$ gsecutil list --attr-filter environment=production
 NAME               TITLE                    OWNER           ENVIRONMENT      SENSITIVE_LEVEL
 team-db-prod       Production Database      backend-team    production       critical
 team-stripe-live   Stripe Live API Key      payments-team   production       critical
 team-sendgrid-api  SendGrid API Key         platform-team   production       medium
 
-$ gsecutil list --filter-attributes owner=backend-team
+$ gsecutil list --attr-filter owner=backend-team
 NAME               TITLE                    OWNER           ENVIRONMENT      SENSITIVE_LEVEL
 team-db-prod       Production Database      backend-team    production       critical
 team-db-staging    Staging Database         backend-team    staging          medium
 
-$ gsecutil list --filter-attributes sensitive_level=critical
+$ gsecutil list --attr-filter sensitive_level=critical
 NAME               TITLE                    OWNER           ENVIRONMENT      SENSITIVE_LEVEL
 team-db-prod       Production Database      backend-team    production       critical
 team-stripe-live   Stripe Live API Key      payments-team   production       critical
 
-$ gsecutil list --filter-attributes environment=production --show-attributes title,vendor
+$ gsecutil list --attr-filter environment=production --show title,vendor
 NAME               TITLE                    VENDOR
 team-db-prod       Production Database      (none)
 team-stripe-live   Stripe Live API Key      Stripe
@@ -195,7 +195,7 @@ my-secret-2
 another-secret
 
 # Force showing attributes when no config (shows empty values)
-$ gsecutil list --show-attributes title,owner
+$ gsecutil list --show title,owner
 NAME               TITLE                    OWNER
 my-secret-1        (no title)              (unknown)
 my-secret-2        (no title)              (unknown)

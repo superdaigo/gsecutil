@@ -47,17 +47,11 @@ var accessCmd = &cobra.Command{
 
 This command allows you to list, grant, and revoke access to secrets for users,
 groups, and service accounts. It provides a simplified interface to manage
-Secret Manager IAM policies.
-
-Available subcommands:
-  list    - List principals with access to a secret
-  grant   - Grant access to a principal
-  revoke  - Revoke access from a principal
-  project - Show project-level Secret Manager permissions`,
+Secret Manager IAM policies.`,
 }
 
 var accessListCmd = &cobra.Command{
-	Use:   "list <secret>",
+	Use:   "list SECRET_NAME",
 	Short: "List principals with access to a secret",
 	Long: `List all users, groups, and service accounts that have access to the specified secret.
 
@@ -81,7 +75,7 @@ Examples:
 }
 
 var accessGrantCmd = &cobra.Command{
-	Use:   "grant <secret>",
+	Use:   "grant SECRET_NAME",
 	Short: "Grant access to a principal for a secret",
 	Long: `Grant access to a user, group, or service account for the specified secret.
 
@@ -105,10 +99,6 @@ Examples:
 		role, _ := cmd.Flags().GetString("role")
 		userInputName := args[0]                           // What the user typed
 		secretName := AddPrefixToSecretName(userInputName) // Add prefix if configured
-
-		if principal == "" {
-			return fmt.Errorf("--principal is required")
-		}
 
 		return grantSecretAccess(secretName, principal, role, project)
 	},
@@ -134,7 +124,7 @@ Examples:
 }
 
 var accessRevokeCmd = &cobra.Command{
-	Use:   "revoke <secret>",
+	Use:   "revoke SECRET_NAME",
 	Short: "Revoke access from a principal for a secret",
 	Long: `Revoke access from a user, group, or service account for the specified secret.
 
@@ -158,10 +148,6 @@ Examples:
 		role, _ := cmd.Flags().GetString("role")
 		userInputName := args[0]                           // What the user typed
 		secretName := AddPrefixToSecretName(userInputName) // Add prefix if configured
-
-		if principal == "" {
-			return fmt.Errorf("--principal is required")
-		}
 
 		return revokeSecretAccess(secretName, principal, role, project)
 	},
@@ -199,12 +185,8 @@ func listSecretAccess(secretName, project string, includeProject bool) error {
 
 // grantSecretAccess grants access to a principal for a secret
 func grantSecretAccess(secretName, principal, role, project string) error {
-	if role == "" {
-		role = "roles/secretmanager.secretAccessor"
-	}
-
 	// Validate the principal format
-	if err := validatePrincipal(principal); err != nil {
+	if err := validatePrincipalFormat(principal); err != nil {
 		return err
 	}
 
@@ -228,18 +210,14 @@ func grantSecretAccess(secretName, principal, role, project string) error {
 		return fmt.Errorf("failed to execute gcloud command: %w", err)
 	}
 
-	fmt.Printf("Successfully granted %s to %s for secret '%s'\n", role, principal, secretName)
+	fmt.Printf("Secret '%s': access granted to %s (%s)\n", secretName, principal, role)
 	return nil
 }
 
 // revokeSecretAccess revokes access from a principal for a secret
 func revokeSecretAccess(secretName, principal, role, project string) error {
-	if role == "" {
-		role = "roles/secretmanager.secretAccessor"
-	}
-
 	// Validate the principal format
-	if err := validatePrincipal(principal); err != nil {
+	if err := validatePrincipalFormat(principal); err != nil {
 		return err
 	}
 
@@ -263,7 +241,7 @@ func revokeSecretAccess(secretName, principal, role, project string) error {
 		return fmt.Errorf("failed to execute gcloud command: %w", err)
 	}
 
-	fmt.Printf("Successfully revoked %s from %s for secret '%s'\n", role, principal, secretName)
+	fmt.Printf("Secret '%s': access revoked from %s (%s)\n", secretName, principal, role)
 	return nil
 }
 
@@ -322,20 +300,7 @@ func displaySecretAccess(secretName string, policy IAMPolicy, includeProject boo
 	}
 }
 
-// validatePrincipal validates the format of a principal
-func validatePrincipal(principal string) error {
-	validPrefixes := []string{"user:", "group:", "serviceAccount:", "domain:", "allUsers", "allAuthenticatedUsers"}
-
-	for _, prefix := range validPrefixes {
-		if strings.HasPrefix(principal, prefix) {
-			return nil
-		}
-	}
-
-	return fmt.Errorf("invalid principal format: %s\nValid formats: user:email@domain.com, group:group@domain.com, serviceAccount:sa@project.iam.gserviceaccount.com, domain:domain.com, allUsers, allAuthenticatedUsers", principal)
-}
-
-// formatPrincipal formats a principal for display
+// formatPrincipal
 func formatPrincipal(principal string) string {
 	parts := strings.SplitN(principal, ":", 2)
 	if len(parts) != 2 {

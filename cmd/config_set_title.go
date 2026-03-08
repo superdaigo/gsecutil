@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -22,8 +23,11 @@ Examples:
 		secretName := args[0]
 		title := args[1]
 
-		// Add prefix if configured
-		secretName = AddPrefixToSecretName(secretName)
+		// Strip prefix if present — config stores bare names (without prefix)
+		// so that list command can look them up after stripping the prefix
+		if prefix := GetPrefix(); prefix != "" && strings.HasPrefix(secretName, prefix) {
+			secretName = strings.TrimPrefix(secretName, prefix)
+		}
 
 		// Load or create config
 		config, err := loadOrCreateConfig()

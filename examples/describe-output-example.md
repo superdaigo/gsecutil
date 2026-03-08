@@ -232,8 +232,8 @@ Rich operational metadata:
 ### Security Review
 ```bash
 # Review all production secrets
-gsecutil list --filter-attributes environment=production
-for secret in $(gsecutil list --filter-attributes environment=production --format json | jq -r '.[].name'); do
+gsecutil list --attr-filter environment=production
+for secret in $(gsecutil list --attr-filter environment=production --format json | jq -r '.[].name'); do
   echo "=== $secret ==="
   gsecutil describe "$secret"
   echo ""
@@ -243,21 +243,21 @@ done
 ### Compliance Audit
 ```bash
 # Find all PCI-DSS secrets
-gsecutil list --filter-attributes compliance_requirements=PCI-DSS
+gsecutil list --attr-filter compliance_requirements=PCI-DSS
 gsecutil describe team-stripe-live | grep -A20 "Config Attributes:"
 ```
 
 ### Rotation Planning
 ```bash
 # Find quarterly rotation secrets
-gsecutil list --filter-attributes rotation_schedule=quarterly --show-attributes title,owner,contact
+gsecutil list --attr-filter rotation_schedule=quarterly --show title,owner,contact
 ```
 
 ### Team Handover
 ```bash
 # Document all backend team secrets
-gsecutil list --filter-attributes owner=backend-team
-for secret in $(gsecutil list --filter-attributes owner=backend-team --format json | jq -r '.[].name'); do
+gsecutil list --attr-filter owner=backend-team
+for secret in $(gsecutil list --attr-filter owner=backend-team --format json | jq -r '.[].name'); do
   gsecutil describe "$secret" > "docs/secrets/${secret}.txt"
 done
 ```

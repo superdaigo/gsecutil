@@ -137,13 +137,15 @@ list:
     - owner
     - environment
 
-# 認証情報のメタデータ
+# 認証情報のメタデータ（名前はベア名 — プレフィックスは自動的に付加）
 credentials:
-  - name: "database-password"
+  - name: "database-password"    # "team-shared-database-password" にアクセス
     title: "Production Database Password"
     environment: "production"
     owner: "backend-team"
 ```
+
+> **プレフィックスは透過的:** プレフィックスが設定されている場合、コマンド・設定・CSV ファイルでは常にベア名（プレフィックスなし）を使用します。プレフィックスは自動的に付加・削除されます。
 
 ### クイックスタート
 

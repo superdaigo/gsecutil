@@ -6,6 +6,8 @@ import (
 	"os/exec"
 	"sort"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -17,34 +19,39 @@ var listCmd = &cobra.Command{
 You can filter results and control the output format. Supports configuration-based
 attribute display and filtering.
 
-When using --show-attributes or list.attributes config, the specified custom attributes
+When using --show or list.attributes config, the specified custom attributes
 are inserted after the NAME column, followed by built-in fields (LABELS, CREATED).
 Built-in Secret Manager fields are always preserved and shown.
 
 Examples:
-  gsecutil list                     # List secrets with default attributes from config
-  gsecutil list --no-labels         # List secrets without labels
-  gsecutil list --format json       # Raw JSON output
+  gsecutil list                             # List secrets with default attributes from config
+  gsecutil list --show-labels               # List secrets with labels
+  gsecutil list --format json               # Raw JSON output
   gsecutil list --filter "labels.env=prod"  # Filter by Secret Manager labels
-  gsecutil list --filter-attributes "environment=prod"  # Filter by config attributes
-  gsecutil list --show-attributes "title,owner,environment"  # Show: NAME + custom attributes + LABELS + CREATED
+  gsecutil list --attr-filter "environment=prod"  # Filter by config attributes
+  gsecutil list --show "title,owner,environment"  # Show: NAME + custom attributes + LABELS + CREATED
   gsecutil list --principal user:alice@example.com  # List secrets accessible by a principal`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		project, _ := cmd.Flags().GetString("project")
 		filter, _ := cmd.Flags().GetString("filter")
 		format, _ := cmd.Flags().GetString("format")
 		limit, _ := cmd.Flags().GetInt("limit")
-		noLabels, _ := cmd.Flags().GetBool("no-labels")
+		showLabels, _ := cmd.Flags().GetBool("show-labels")
 		principal, _ := cmd.Flags().GetString("principal")
-		filterAttributes, _ := cmd.Flags().GetString("filter-attributes")
-		showAttributes, _ := cmd.Flags().GetString("show-attributes")
+		attrFilter, _ := cmd.Flags().GetString("attr-filter")
+		showAttributes, _ := cmd.Flags().GetString("show")
+		// Also check --show-attributes for backward compatibility during transition
+		if showAttributes == "" {
+			showAttributes, _ = cmd.Flags().GetString("show-attributes")
+		}
+		showUpdated, _ := cmd.Flags().GetBool("show-updated")
 
 		// Use configuration-based project resolution
 		project = GetProject(project)
 
 		// If principal is specified, list secrets accessible by that principal
 		if principal != "" {
-			return listSecretsForPrincipal(principal, project, !noLabels)
+			return listSecretsForPrincipal(principal, project, showLabels, showUpdated)
 		}
 
 		// If user specified a custom format, use the original gcloud passthrough approach
@@ -53,17 +60,27 @@ Examples:
 		}
 
 		// Handle configuration-based filtering
-		if filterAttributes != "" {
-			return listSecretsWithConfigFiltering(project, filter, limit, filterAttributes, showAttributes, !noLabels)
+		if attrFilter != "" {
+			return listSecretsWithConfigFiltering(project, filter, limit, attrFilter, showAttributes, showLabels, showUpdated)
 		}
 
 		// Enhanced list with potential config attributes
-		return listSecretsWithConfigAttributes(project, filter, limit, showAttributes, !noLabels)
+		return listSecretsWithConfigAttributes(project, filter, limit, showAttributes, showLabels, showUpdated)
 	},
 }
 
 // runOriginalGcloudList runs the original gcloud list command for custom formats
 func runOriginalGcloudList(project, filter, format string, limit int) error {
+	// Inject prefix filter so custom formats respect the configured prefix
+	if prefix := GetPrefix(); prefix != "" {
+		prefixFilter := fmt.Sprintf("name:'/secrets/%s'", prefix)
+		if filter != "" {
+			filter = fmt.Sprintf("(%s) AND %s", filter, prefixFilter)
+		} else {
+			filter = prefixFilter
+		}
+	}
+
 	// Build gcloud command
 	gcloudArgs := []string{"secrets", "list"}
 
@@ -98,7 +115,7 @@ func runOriginalGcloudList(project, filter, format string, limit int) error {
 }
 
 // listSecretsWithLabels lists secrets with enhanced formatting including labels
-func listSecretsWithLabels(project, filter string, limit int, showLabels bool) error {
+func listSecretsWithLabels(project, filter string, limit int, showLabels, showUpdated bool) error {
 	secrets, err := fetchSecrets(project, filter, limit)
 	if err != nil {
 		return err
@@ -112,80 +129,147 @@ func listSecretsWithLabels(project, filter string, limit int, showLabels bool) e
 	// Sort secrets by name for consistent output
 	sortSecrets(secrets)
 
+	if showUpdated {
+		enrichSecretsWithVersionTimes(secrets, project)
+	}
+
 	// Display secrets
 	if showLabels {
-		displaySecretsWithLabels(secrets)
+		displaySecretsWithLabels(secrets, showUpdated)
 	} else {
-		displaySecretsSimple(secrets)
+		displaySecretsSimple(secrets, showUpdated)
 	}
 
 	return nil
 }
 
 // displaySecretsWithLabels displays secrets in a table format with labels
-func displaySecretsWithLabels(secrets []SecretInfo) {
-	// Calculate column widths
+func displaySecretsWithLabels(secrets []SecretInfo, showUpdated bool) {
+	prefix := GetPrefix()
+	// Calculate column widths using terminal display width (wide chars = 2 cols)
 	maxNameWidth := 4    // "NAME"
 	maxLabelsWidth := 6  // "LABELS"
 	maxCreatedWidth := 7 // "CREATED"
+	maxUpdatedWidth := 7 // "UPDATED"
 
 	for _, secret := range secrets {
-		name := extractSecretName(secret.Name)
-		if len(name) > maxNameWidth {
-			maxNameWidth = len(name)
+		name := strings.TrimPrefix(extractSecretName(secret.Name), prefix)
+		if w := displayWidth(name); w > maxNameWidth {
+			maxNameWidth = w
 		}
-
 		labelsStr := formatLabels(secret.Labels)
-		if len(labelsStr) > maxLabelsWidth {
-			maxLabelsWidth = len(labelsStr)
+		if w := displayWidth(labelsStr); w > maxLabelsWidth {
+			maxLabelsWidth = w
 		}
-
-		createdStr := secret.CreateTime.Format("2006-01-02")
-		if len(createdStr) > maxCreatedWidth {
-			maxCreatedWidth = len(createdStr)
+		createdStr := secret.CreateTime.UTC().Format(datetimeFormat)
+		if w := displayWidth(createdStr); w > maxCreatedWidth {
+			maxCreatedWidth = w
+		}
+		if showUpdated {
+			if w := displayWidth(formatUpdateTime(secret.LatestVersionTime)); w > maxUpdatedWidth {
+				maxUpdatedWidth = w
+			}
 		}
 	}
 
 	// Print header
-	fmt.Printf("%-*s  %-*s  %-*s\n", maxNameWidth, "NAME", maxLabelsWidth, "LABELS", maxCreatedWidth, "CREATED")
-	fmt.Printf("%s  %s  %s\n", strings.Repeat("-", maxNameWidth), strings.Repeat("-", maxLabelsWidth), strings.Repeat("-", maxCreatedWidth))
+	header := padRight("NAME", maxNameWidth) + "  " + padRight("LABELS", maxLabelsWidth) + "  " + padRight("CREATED (UTC)", maxCreatedWidth)
+	sep := strings.Repeat("-", maxNameWidth) + "  " + strings.Repeat("-", maxLabelsWidth) + "  " + strings.Repeat("-", maxCreatedWidth)
+	if showUpdated {
+		header += "  " + padRight("UPDATED (UTC)", maxUpdatedWidth)
+		sep += "  " + strings.Repeat("-", maxUpdatedWidth)
+	}
+	fmt.Println(header)
+	fmt.Println(sep)
 
 	// Print secrets
 	for _, secret := range secrets {
-		name := extractSecretName(secret.Name)
+		name := strings.TrimPrefix(extractSecretName(secret.Name), prefix)
 		labelsStr := formatLabels(secret.Labels)
-		createdStr := secret.CreateTime.Format("2006-01-02")
-		fmt.Printf("%-*s  %-*s  %-*s\n", maxNameWidth, name, maxLabelsWidth, labelsStr, maxCreatedWidth, createdStr)
+		createdStr := secret.CreateTime.UTC().Format(datetimeFormat)
+		row := padRight(name, maxNameWidth) + "  " + padRight(labelsStr, maxLabelsWidth) + "  " + padRight(createdStr, maxCreatedWidth)
+		if showUpdated {
+			row += "  " + padRight(formatUpdateTime(secret.LatestVersionTime), maxUpdatedWidth)
+		}
+		fmt.Println(row)
 	}
 }
 
 // displaySecretsSimple displays secrets without labels (similar to original gcloud output)
-func displaySecretsSimple(secrets []SecretInfo) {
+func displaySecretsSimple(secrets []SecretInfo, showUpdated bool) {
+	prefix := GetPrefix()
 	maxNameWidth := 4    // "NAME"
 	maxCreatedWidth := 7 // "CREATED"
+	maxUpdatedWidth := 7 // "UPDATED"
 
 	for _, secret := range secrets {
-		name := extractSecretName(secret.Name)
-		if len(name) > maxNameWidth {
-			maxNameWidth = len(name)
+		name := strings.TrimPrefix(extractSecretName(secret.Name), prefix)
+		if w := displayWidth(name); w > maxNameWidth {
+			maxNameWidth = w
 		}
-
-		createdStr := secret.CreateTime.Format("2006-01-02 15:04:05")
-		if len(createdStr) > maxCreatedWidth {
-			maxCreatedWidth = len(createdStr)
+		createdStr := secret.CreateTime.UTC().Format(datetimeFormat)
+		if w := displayWidth(createdStr); w > maxCreatedWidth {
+			maxCreatedWidth = w
+		}
+		if showUpdated {
+			if w := displayWidth(formatUpdateTime(secret.LatestVersionTime)); w > maxUpdatedWidth {
+				maxUpdatedWidth = w
+			}
 		}
 	}
 
 	// Print header
-	fmt.Printf("%-*s  %-*s\n", maxNameWidth, "NAME", maxCreatedWidth, "CREATE_TIME")
-	fmt.Printf("%s  %s\n", strings.Repeat("-", maxNameWidth), strings.Repeat("-", maxCreatedWidth))
+	header := padRight("NAME", maxNameWidth) + "  " + padRight("CREATED (UTC)", maxCreatedWidth)
+	sep := strings.Repeat("-", maxNameWidth) + "  " + strings.Repeat("-", maxCreatedWidth)
+	if showUpdated {
+		header += "  " + padRight("UPDATED (UTC)", maxUpdatedWidth)
+		sep += "  " + strings.Repeat("-", maxUpdatedWidth)
+	}
+	fmt.Println(header)
+	fmt.Println(sep)
 
 	// Print secrets
 	for _, secret := range secrets {
-		name := extractSecretName(secret.Name)
-		createdStr := secret.CreateTime.Format("2006-01-02T15:04:05Z")
-		fmt.Printf("%-*s  %-*s\n", maxNameWidth, name, maxCreatedWidth, createdStr)
+		name := strings.TrimPrefix(extractSecretName(secret.Name), prefix)
+		createdStr := secret.CreateTime.UTC().Format(datetimeFormat)
+		row := padRight(name, maxNameWidth) + "  " + padRight(createdStr, maxCreatedWidth)
+		if showUpdated {
+			row += "  " + padRight(formatUpdateTime(secret.LatestVersionTime), maxUpdatedWidth)
+		}
+		fmt.Println(row)
 	}
+}
+
+// enrichSecretsWithVersionTimes fetches the latest version createTime for each secret
+// concurrently and stores it in LatestVersionTime. Secrets with no versions show "-".
+func enrichSecretsWithVersionTimes(secrets []SecretInfo, project string) {
+	const maxConcurrency = 10
+	sem := make(chan struct{}, maxConcurrency)
+	var wg sync.WaitGroup
+	for i := range secrets {
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
+			name := extractSecretName(secrets[idx].Name)
+			if versionInfo, err := getSecretVersionInfo(name, "latest", project); err == nil {
+				secrets[idx].LatestVersionTime = versionInfo.CreateTime
+			}
+		}(i)
+	}
+	wg.Wait()
+}
+
+// datetimeFormat is the standard format for displaying timestamps in list output
+const datetimeFormat = "2006-01-02 15:04"
+
+// formatUpdateTime formats an update time for display, returning "-" if not set
+func formatUpdateTime(t time.Time) string {
+	if t.IsZero() {
+		return "-"
+	}
+	return t.UTC().Format(datetimeFormat)
 }
 
 // formatLabels formats labels as key=value pairs separated by commas
@@ -211,7 +295,7 @@ func formatLabels(labels map[string]string) string {
 }
 
 // listSecretsForPrincipal lists all secrets that a principal has access to
-func listSecretsForPrincipal(principal, project string, showLabels bool) error {
+func listSecretsForPrincipal(principal, project string, showLabels, showUpdated bool) error {
 	// Validate the principal format
 	if err := validatePrincipalFormat(principal); err != nil {
 		return err
@@ -252,13 +336,17 @@ func listSecretsForPrincipal(principal, project string, showLabels bool) error {
 	// Sort secrets by name for consistent output
 	sortSecrets(accessibleSecrets)
 
+	if showUpdated {
+		enrichSecretsWithVersionTimes(accessibleSecrets, project)
+	}
+
 	fmt.Printf("Secrets accessible by '%s':\n\n", principal)
 
 	// Display accessible secrets
 	if showLabels {
-		displaySecretsWithLabels(accessibleSecrets)
+		displaySecretsWithLabels(accessibleSecrets, showUpdated)
 	} else {
-		displaySecretsSimple(accessibleSecrets)
+		displaySecretsSimple(accessibleSecrets, showUpdated)
 	}
 
 	return nil
@@ -378,7 +466,7 @@ func validatePrincipalFormat(principal string) error {
 }
 
 // listSecretsWithConfigAttributes lists secrets with configuration-based attribute display
-func listSecretsWithConfigAttributes(project, filter string, limit int, showAttributes string, showLabels bool) error {
+func listSecretsWithConfigAttributes(project, filter string, limit int, showAttributes string, showLabels, showUpdated bool) error {
 	// Get secrets first
 	gcloudArgs := []string{"secrets", "list", "--format", "json"}
 
@@ -432,6 +520,10 @@ func listSecretsWithConfigAttributes(project, filter string, limit int, showAttr
 		return secrets[i].Name < secrets[j].Name
 	})
 
+	if showUpdated {
+		enrichSecretsWithVersionTimes(secrets, project)
+	}
+
 	// Determine which attributes to show
 	var attributes []string
 	if showAttributes != "" {
@@ -444,22 +536,22 @@ func listSecretsWithConfigAttributes(project, filter string, limit int, showAttr
 
 	// Display secrets with or without config attributes
 	if len(attributes) > 0 {
-		displaySecretsWithConfigAttributes(secrets, attributes)
+		displaySecretsWithConfigAttributes(secrets, attributes, showLabels, showUpdated)
 	} else if showLabels {
-		displaySecretsWithLabels(secrets)
+		displaySecretsWithLabels(secrets, showUpdated)
 	} else {
-		displaySecretsSimple(secrets)
+		displaySecretsSimple(secrets, showUpdated)
 	}
 
 	return nil
 }
 
-// listSecretsWithConfigFiltering lists secrets filtered by configuration attributes
-func listSecretsWithConfigFiltering(project, filter string, limit int, filterAttributes, showAttributes string, showLabels bool) error {
+// listSecretsWithConfigFiltering
+func listSecretsWithConfigFiltering(project, filter string, limit int, filterAttributes, showAttributes string, showLabels, showUpdated bool) error {
 	// Parse filter attributes
 	filters, err := ParseFilterAttributes(filterAttributes)
 	if err != nil {
-		return fmt.Errorf("invalid filter-attributes: %w", err)
+		return fmt.Errorf("invalid attr-filter: %w", err)
 	}
 
 	// Filter credentials based on attributes
@@ -504,8 +596,9 @@ func listSecretsWithConfigFiltering(project, filter string, limit int, filterAtt
 	var matchingSecrets []SecretInfo
 	for _, secret := range allSecrets {
 		secretName := extractSecretName(secret.Name)
+		bareName := strings.TrimPrefix(secretName, GetPrefix()) // config stores bare names
 		for _, cred := range filteredCredentials {
-			if cred.Name == secretName {
+			if cred.Name == bareName {
 				matchingSecrets = append(matchingSecrets, secret)
 				break
 			}
@@ -522,6 +615,10 @@ func listSecretsWithConfigFiltering(project, filter string, limit int, filterAtt
 		return matchingSecrets[i].Name < matchingSecrets[j].Name
 	})
 
+	if showUpdated {
+		enrichSecretsWithVersionTimes(matchingSecrets, project)
+	}
+
 	// Determine which attributes to show
 	var attributes []string
 	if showAttributes != "" {
@@ -534,70 +631,80 @@ func listSecretsWithConfigFiltering(project, filter string, limit int, filterAtt
 
 	// Display filtered secrets with config attributes
 	if len(attributes) > 0 {
-		displaySecretsWithConfigAttributes(matchingSecrets, attributes)
+		displaySecretsWithConfigAttributes(matchingSecrets, attributes, showLabels, showUpdated)
 	} else if showLabels {
-		displaySecretsWithLabels(matchingSecrets)
+		displaySecretsWithLabels(matchingSecrets, showUpdated)
 	} else {
-		displaySecretsSimple(matchingSecrets)
+		displaySecretsSimple(matchingSecrets, showUpdated)
 	}
 
 	return nil
 }
 
 // displaySecretsWithConfigAttributes displays secrets with configuration-based attributes
-// Built-in fields (LABELS, CREATED) are always shown, custom attributes are inserted after NAME
-func displaySecretsWithConfigAttributes(secrets []SecretInfo, attributes []string) {
+// Custom attributes are inserted after NAME, LABELS is shown only if showLabels is true
+func displaySecretsWithConfigAttributes(secrets []SecretInfo, attributes []string, showLabels, showUpdated bool) {
 	// Calculate column widths for built-in fields
 	maxNameWidth := 4    // "NAME"
 	maxLabelsWidth := 6  // "LABELS"
 	maxCreatedWidth := 7 // "CREATED"
+	maxUpdatedWidth := 7 // "UPDATED"
 	attributeWidths := make([]int, len(attributes))
 
-	// Initialize attribute widths with header names
+	// Initialize attribute widths with header names (display width)
 	for i, attr := range attributes {
-		attributeWidths[i] = len(strings.ToUpper(attr))
+		attributeWidths[i] = displayWidth(strings.ToUpper(attr))
 	}
 
-	// Calculate widths based on content
+	// Calculate widths based on content using terminal display width
+	prefix := GetPrefix()
 	for _, secret := range secrets {
-		secretName := extractSecretName(secret.Name)
-		if len(secretName) > maxNameWidth {
-			maxNameWidth = len(secretName)
+		secretName := strings.TrimPrefix(extractSecretName(secret.Name), prefix)
+		if w := displayWidth(secretName); w > maxNameWidth {
+			maxNameWidth = w
 		}
 
 		// Calculate labels width
-		labelsStr := formatLabels(secret.Labels)
-		if len(labelsStr) > maxLabelsWidth {
-			maxLabelsWidth = len(labelsStr)
+		if showLabels {
+			labelsStr := formatLabels(secret.Labels)
+			if w := displayWidth(labelsStr); w > maxLabelsWidth {
+				maxLabelsWidth = w
+			}
 		}
 
 		// Calculate created width
-		createdStr := secret.CreateTime.Format("2006-01-02")
-		if len(createdStr) > maxCreatedWidth {
-			maxCreatedWidth = len(createdStr)
+		createdStr := secret.CreateTime.UTC().Format(datetimeFormat)
+		if w := displayWidth(createdStr); w > maxCreatedWidth {
+			maxCreatedWidth = w
 		}
 
-		// Convert secret name to user input name for config lookup
-		userInputName := secretName
-		if prefix := GetPrefix(); prefix != "" && strings.HasPrefix(secretName, prefix) {
-			userInputName = strings.TrimPrefix(secretName, prefix)
+		if showUpdated {
+			if w := displayWidth(formatUpdateTime(secret.LatestVersionTime)); w > maxUpdatedWidth {
+				maxUpdatedWidth = w
+			}
 		}
 
-		cred := GetCredentialInfo(userInputName)
+		cred := GetCredentialInfo(secretName) // secretName is already bare after TrimPrefix above
 		for i, attr := range attributes {
 			value := GetAttributeValue(cred, attr)
-			if len(value) > attributeWidths[i] {
-				attributeWidths[i] = len(value)
+			if w := displayWidth(value); w > attributeWidths[i] {
+				attributeWidths[i] = w
 			}
 		}
 	}
 
 	// Print header: NAME + custom attributes + built-in fields
-	header := fmt.Sprintf("%-*s", maxNameWidth, "NAME")
+	header := padRight("NAME", maxNameWidth)
 	for i, attr := range attributes {
-		header += fmt.Sprintf("  %-*s", attributeWidths[i], strings.ToUpper(attr))
+		header += "  " + padRight(strings.ToUpper(attr), attributeWidths[i])
 	}
-	header += fmt.Sprintf("  %-*s  %-*s", maxLabelsWidth, "LABELS", maxCreatedWidth, "CREATED")
+	if showLabels {
+		header += "  " + padRight("LABELS", maxLabelsWidth)
+	}
+	header += "  " + padRight("CREATED (UTC)", maxCreatedWidth)
+	if showUpdated {
+		header += "  " + padRight("UPDATED (UTC)", maxUpdatedWidth)
+	}
 	fmt.Println(header)
 
 	// Print separator
@@ -605,34 +712,40 @@ func displaySecretsWithConfigAttributes(secrets []SecretInfo, attributes []strin
 	for _, width := range attributeWidths {
 		separator += "  " + strings.Repeat("-", width)
 	}
-	separator += "  " + strings.Repeat("-", maxLabelsWidth) + "  " + strings.Repeat("-", maxCreatedWidth)
+	if showLabels {
+		separator += "  " + strings.Repeat("-", maxLabelsWidth)
+	}
+	separator += "  " + strings.Repeat("-", maxCreatedWidth)
+	if showUpdated {
+		separator += "  " + strings.Repeat("-", maxUpdatedWidth)
+	}
 	fmt.Println(separator)
 
 	// Print secrets: NAME + custom attributes + built-in fields
 	for _, secret := range secrets {
-		secretName := extractSecretName(secret.Name)
+		secretName := strings.TrimPrefix(extractSecretName(secret.Name), prefix)
 
-		// Convert secret name to user input name for config lookup
-		userInputName := secretName
-		if prefix := GetPrefix(); prefix != "" && strings.HasPrefix(secretName, prefix) {
-			userInputName = strings.TrimPrefix(secretName, prefix)
-		}
-
-		cred := GetCredentialInfo(userInputName)
+		cred := GetCredentialInfo(secretName) // bare name
 
 		// Start with NAME
-		row := fmt.Sprintf("%-*s", maxNameWidth, secretName)
+		row := padRight(secretName, maxNameWidth)
 
 		// Add custom attributes
 		for i, attr := range attributes {
 			value := GetAttributeValue(cred, attr)
-			row += fmt.Sprintf("  %-*s", attributeWidths[i], value)
+			row += "  " + padRight(value, attributeWidths[i])
 		}
 
-		// Add built-in fields
-		labelsStr := formatLabels(secret.Labels)
-		createdStr := secret.CreateTime.Format("2006-01-02")
-		row += fmt.Sprintf("  %-*s  %-*s", maxLabelsWidth, labelsStr, maxCreatedWidth, createdStr)
+		// Add labels if requested
+		createdStr := secret.CreateTime.UTC().Format(datetimeFormat)
+		if showLabels {
+			labelsStr := formatLabels(secret.Labels)
+			row += "  " + padRight(labelsStr, maxLabelsWidth)
+		}
+		row += "  " + padRight(createdStr, maxCreatedWidth)
+		if showUpdated {
+			row += "  " + padRight(formatUpdateTime(secret.LatestVersionTime), maxUpdatedWidth)
+		}
 
 		fmt.Println(row)
 	}
@@ -641,10 +754,13 @@ func displaySecretsWithConfigAttributes(secrets []SecretInfo, attributes []strin
 func init() {
 	rootCmd.AddCommand(listCmd)
 	listCmd.Flags().String("filter", "", "Filter expression to apply to Secret Manager labels")
-	listCmd.Flags().String("filter-attributes", "", "Filter by configuration file attributes (format: key=value,key2=value2)")
-	listCmd.Flags().String("show-attributes", "", "Comma-separated list of attributes to display from configuration file (inserted after NAME, before built-in fields)")
+	listCmd.Flags().String("attr-filter", "", "Filter by configuration file attributes (format: key=value,key2=value2)")
+	listCmd.Flags().String("show", "", "Comma-separated list of attributes to display from configuration file (inserted after NAME, before built-in fields)")
+	listCmd.Flags().String("show-attributes", "", "(Alias for --show) Comma-separated list of attributes to display from configuration file")
+	listCmd.Flags().MarkHidden("show-attributes") // Hide from help but keep for compatibility
 	listCmd.Flags().String("format", "", "Output format (e.g., table, json, yaml) - custom formats bypass attribute display")
 	listCmd.Flags().Int("limit", 0, "Maximum number of secrets to list (0 for no limit)")
-	listCmd.Flags().Bool("no-labels", false, "Hide labels in output")
+	listCmd.Flags().Bool("show-labels", false, "Show labels in output")
 	listCmd.Flags().String("principal", "", "List secrets accessible by this principal (format: user:email@domain.com, group:group@domain.com, etc.)")
+	listCmd.Flags().Bool("show-updated", false, "Show UPDATED column (fetches latest version time per secret; slower for large lists)")
 }
