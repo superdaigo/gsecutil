@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -192,8 +193,8 @@ func parseOperationFilter(operationFilter string) []string {
 
 	// Warn about invalid operations but continue with valid ones
 	if len(invalidOps) > 0 {
-		fmt.Printf("Warning: Invalid operation(s) ignored: %s\n", strings.Join(invalidOps, ", "))
-		fmt.Printf("Valid operations are: ACCESS, CREATE, UPDATE, DELETE, GET_METADATA, LIST, UPDATE_METADATA, DESTROY_VERSION, DISABLE_VERSION, ENABLE_VERSION\n")
+		fmt.Fprintf(os.Stderr, "Warning: Invalid operation(s) ignored: %s\n", strings.Join(invalidOps, ", "))
+		fmt.Fprintf(os.Stderr, "Valid operations are: ACCESS, CREATE, UPDATE, DELETE, GET_METADATA, LIST, UPDATE_METADATA, DESTROY_VERSION, DISABLE_VERSION, ENABLE_VERSION\n")
 	}
 
 	return operations
