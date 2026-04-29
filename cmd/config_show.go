@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"sort"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -167,18 +168,29 @@ func displayCredentialsTable(config *Config) {
 	if len(config.Credentials) == 0 {
 		return
 	}
+	// Sort credentials by name for deterministic output
+	sortedCreds := make([]CredentialInfo, len(config.Credentials))
+	copy(sortedCreds, config.Credentials)
+	sort.Slice(sortedCreds, func(i, j int) bool {
+		return sortedCreds[i].Name < sortedCreds[j].Name
+	})
 
 	// Collect all unique attribute keys
 	attributeKeys := make(map[string]bool)
-	for _, cred := range config.Credentials {
+	for _, cred := range sortedCreds {
 		for key := range cred.Attributes {
 			attributeKeys[key] = true
 		}
 	}
+	sortedAttributeKeys := make([]string, 0, len(attributeKeys))
+	for key := range attributeKeys {
+		sortedAttributeKeys = append(sortedAttributeKeys, key)
+	}
+	sort.Strings(sortedAttributeKeys)
 
 	// Prepare column headers
 	headers := []string{"NAME", "TITLE"}
-	for key := range attributeKeys {
+	for _, key := range sortedAttributeKeys {
 		headers = append(headers, strings.ToUpper(key))
 	}
 
@@ -189,7 +201,7 @@ func displayCredentialsTable(config *Config) {
 	}
 
 	// Calculate widths based on data
-	for _, cred := range config.Credentials {
+	for _, cred := range sortedCreds {
 		if len(cred.Name) > colWidths[0] {
 			colWidths[0] = len(cred.Name)
 		}
@@ -221,7 +233,7 @@ func displayCredentialsTable(config *Config) {
 	fmt.Println()
 
 	// Print rows
-	for _, cred := range config.Credentials {
+	for _, cred := range sortedCreds {
 		// Name
 		fmt.Printf("%-*s", colWidths[0]+2, cred.Name)
 
