@@ -409,6 +409,9 @@ func checkSecretLevelAccess(secretName, principal, project string) (bool, error)
 // checkProjectLevelAccess checks if a principal has project-level Secret Manager access
 func checkProjectLevelAccess(principal, project string) (bool, error) {
 	projectID := getProjectID(project)
+	if projectID == "" {
+		return false, missingProjectIDError()
+	}
 
 	// Get project IAM policy
 	gcloudArgs := []string{"projects", "get-iam-policy", projectID, "--format", "json"}

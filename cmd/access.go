@@ -17,6 +17,10 @@ type IAMPolicy struct {
 	Bindings []Binding `json:"bindings"`
 }
 
+func missingProjectIDError() error {
+	return fmt.Errorf("project ID is not configured. Specify --project, set GSECUTIL_PROJECT, or set project in the config file")
+}
+
 // Binding represents an IAM policy binding
 type Binding struct {
 	Role      string     `json:"role"`
@@ -334,15 +338,22 @@ func getProjectID(project string) string {
 	gcloudCmd := exec.Command("gcloud", "config", "get-value", "project")
 	output, err := gcloudCmd.Output()
 	if err != nil {
-		return "PROJECT_ID" // Fallback
+		return ""
 	}
-
-	return strings.TrimSpace(string(output))
+	projectID := strings.TrimSpace(string(output))
+	if projectID == "" || projectID == "(unset)" {
+		return ""
+	}
+	return projectID
 }
 
 // displayProjectLevelAccess displays project-level permissions that affect Secret Manager access
 func displayProjectLevelAccess(project string) {
 	projectID := getProjectID(project)
+	if projectID == "" {
+		fmt.Printf("Warning: %v\n", missingProjectIDError())
+		return
+	}
 
 	fmt.Printf("\n--- Project-Level Permissions (Project: %s) ---\n\n", projectID)
 
@@ -433,6 +444,9 @@ func displayProjectLevelAccess(project string) {
 // showProjectLevelPermissions shows project-level permissions without requiring a secret
 func showProjectLevelPermissions(project string) error {
 	projectID := getProjectID(project)
+	if projectID == "" {
+		return missingProjectIDError()
+	}
 
 	fmt.Printf("Project-Level Secret Manager Permissions (Project: %s)\n\n", projectID)
 
