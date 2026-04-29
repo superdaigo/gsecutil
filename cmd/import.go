@@ -37,8 +37,9 @@ or --upsert to create new secrets and update existing ones.
 The --update-config flag will update the configuration file with titles and
 attributes from the CSV.
 
-Note: CSV names are used as-is (literally). If you have a configured prefix,
-you should include it in your CSV names to match your actual secret names.`,
+When a prefix is configured, CSV names are treated as bare names and the prefix
+is applied automatically. Names that cannot be resolved to valid prefixed secrets
+are skipped.`,
 	Example: `  gsecutil import secrets.csv
   gsecutil import secrets.csv --update
   gsecutil import secrets.csv --upsert
@@ -58,6 +59,7 @@ func init() {
 func runImport(cmd *cobra.Command, args []string) error {
 	project, _ := cmd.Flags().GetString("project")
 	project = GetProject(project)
+	prefix := GetPrefix()
 	importUpdate, _ := cmd.Flags().GetBool("update")
 	importUpsert, _ := cmd.Flags().GetBool("upsert")
 	importDryRun, _ := cmd.Flags().GetBool("dry-run")
@@ -83,7 +85,7 @@ func runImport(cmd *cobra.Command, args []string) error {
 	}
 
 	// Get existing secrets
-	existingSecrets, err := getExistingSecretNames(project)
+	existingSecrets, err := getExistingSecretNames(project, prefix)
 	if err != nil {
 		return fmt.Errorf("failed to get existing secrets: %w", err)
 	}
@@ -114,15 +116,18 @@ func runImport(cmd *cobra.Command, args []string) error {
 			continue
 		}
 
-		// Use CSV name as-is (literal name from CSV)
-		name := userInputName
+		resolvedName, bareName, skip, skipReason := resolveImportSecretName(userInputName, prefix)
+		if skip {
+			fmt.Printf("Warning: Row %d skipped: %s\n", i+2, skipReason)
+			stats.skipped++
+			continue
+		}
 
 		value := ""
 		if valueIdx >= 0 {
 			value = record[valueIdx]
 		}
-
-		exists := existingSecrets[name]
+		exists := existingSecrets[resolvedName]
 
 		// Determine action
 		action := ""
@@ -132,13 +137,13 @@ func runImport(cmd *cobra.Command, args []string) error {
 			} else if importUpdate {
 				action = "update"
 			} else {
-				fmt.Printf("Secret '%s' already exists. Skipping. (Use --update or --upsert to update)\n", name)
+				fmt.Printf("Secret '%s' already exists. Skipping. (Use --update or --upsert to update)\n", resolvedName)
 				stats.skipped++
 				continue
 			}
 		} else {
 			if importUpdate {
-				fmt.Printf("Secret '%s' does not exist. Skipping. (Use --upsert to create)\n", name)
+				fmt.Printf("Secret '%s' does not exist. Skipping. (Use --upsert to create)\n", resolvedName)
 				stats.skipped++
 				continue
 			} else {
@@ -151,20 +156,20 @@ func runImport(cmd *cobra.Command, args []string) error {
 
 		// Update config if requested (use CSV name as-is)
 		if importUpdateConfig && config != nil && !importDryRun {
-			updateConfigWithMetadata(config, userInputName, title, attributes)
+			updateConfigWithMetadata(config, bareName, title, attributes)
 		}
 
 		// Perform action
 		if importDryRun {
-			fmt.Printf("[DRY-RUN] Would %s secret: %s\n", action, name)
+			fmt.Printf("[DRY-RUN] Would %s secret: %s\n", action, resolvedName)
 			stats.processed++
 		} else {
-			if err := performSecretAction(action, name, value, labels, project); err != nil {
-				fmt.Printf("Error %sing secret '%s': %v\n", action, name, err)
+			if err := performSecretAction(action, resolvedName, value, labels, project); err != nil {
+				fmt.Printf("Error %sing secret '%s': %v\n", action, resolvedName, err)
 				stats.failed++
 			} else {
 				actionDone := map[string]string{"create": "Created", "update": "Updated"}[action]
-				fmt.Printf("%s secret: %s\n", actionDone, name)
+				fmt.Printf("%s secret: %s\n", actionDone, resolvedName)
 				if action == "create" {
 					stats.created++
 				} else {
@@ -288,7 +293,7 @@ func validateHeader(header []string) (nameIdx, valueIdx int, err error) {
 	return nameIdx, valueIdx, nil
 }
 
-func getExistingSecretNames(project string) (map[string]bool, error) {
+func getExistingSecretNames(project, prefix string) (map[string]bool, error) {
 	gcloudArgs := []string{"secrets", "list", "--format", "value(name)"}
 	if project != "" {
 		gcloudArgs = append(gcloudArgs, "--project", project)
@@ -313,11 +318,39 @@ func getExistingSecretNames(project string) (map[string]bool, error) {
 			if len(parts) > 0 {
 				name = parts[len(parts)-1]
 			}
+			if prefix != "" && !strings.HasPrefix(name, prefix) {
+				continue
+			}
 			secrets[name] = true
 		}
 	}
 
 	return secrets, nil
+}
+
+func resolveImportSecretName(userInputName, prefix string) (resolvedName, bareName string, skip bool, skipReason string) {
+	if prefix == "" {
+		return userInputName, userInputName, false, ""
+	}
+
+	if strings.Contains(userInputName, "/") {
+		return "", "", true, fmt.Sprintf("name '%s' is invalid; use bare secret names (without resource path)", userInputName)
+	}
+
+	if strings.HasPrefix(userInputName, prefix) {
+		bareName = strings.TrimPrefix(userInputName, prefix)
+		if bareName == "" {
+			return "", "", true, fmt.Sprintf("name '%s' is invalid; no secret name remains after removing prefix '%s'", userInputName, prefix)
+		}
+		return userInputName, bareName, false, ""
+	}
+
+	resolvedName = prefix + userInputName
+	if !strings.HasPrefix(resolvedName, prefix) {
+		return "", "", true, fmt.Sprintf("name '%s' does not match configured prefix '%s'", userInputName, prefix)
+	}
+
+	return resolvedName, userInputName, false, ""
 }
 
 func extractColumnsData(header, record []string, nameIdx, valueIdx int) (map[string]string, string, map[string]string) {
