@@ -171,7 +171,7 @@ gsecutil list [flags]
 - `--attr-filter` - Filter by config attributes (format: key=value,key2=value2)
 - `--format` - Output format (json, yaml, table)
 - `--limit` - Maximum number of secrets to list
-- `--show-labels` - Show labels in output (default: true)
+- `--no-labels` - Hide labels in output
 - `--principal` - List secrets accessible by this principal
 - `--show` - Comma-separated attributes to display from config
 - `--show-updated` - Show UPDATED column (slower, fetches latest version times)
@@ -191,7 +191,7 @@ gsecutil list --attr-filter "environment=production,owner=backend-team"
 gsecutil list --show "title,owner,environment"
 
 # Hide labels
-gsecutil list --show-labels=false
+gsecutil list --no-labels
 
 # Show updated times
 gsecutil list --show-updated
