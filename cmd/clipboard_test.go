@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"os"
 	"testing"
 	"time"
 )
@@ -52,6 +53,57 @@ func TestExtractVersionNumber(t *testing.T) {
 				t.Errorf("extractVersionNumber(%q) = %q, expected %q", tt.versionName, result, tt.expected)
 			}
 		})
+	}
+}
+
+func TestGetSecretInputFromFile(t *testing.T) {
+	tempFile, err := os.CreateTemp("", "gsecutil-secret-input-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp file: %v", err)
+	}
+	defer os.Remove(tempFile.Name())
+
+	expected := "file-secret-value\n"
+	if _, err := tempFile.WriteString(expected); err != nil {
+		t.Fatalf("Failed to write temp file: %v", err)
+	}
+	if err := tempFile.Close(); err != nil {
+		t.Fatalf("Failed to close temp file: %v", err)
+	}
+
+	result, err := getSecretInput("", tempFile.Name(), "")
+	if err != nil {
+		t.Fatalf("Unexpected error reading file input: %v", err)
+	}
+	if result != expected {
+		t.Fatalf("getSecretInput(file) = %q, expected %q", result, expected)
+	}
+}
+
+func TestGetSecretInputFromStdinDash(t *testing.T) {
+	originalStdin := os.Stdin
+	reader, writer, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("Failed to create stdin pipe: %v", err)
+	}
+	defer reader.Close()
+	os.Stdin = reader
+	defer func() { os.Stdin = originalStdin }()
+
+	expected := "stdin-secret-value\nwith-newline\n"
+	if _, err := writer.WriteString(expected); err != nil {
+		t.Fatalf("Failed to write stdin test data: %v", err)
+	}
+	if err := writer.Close(); err != nil {
+		t.Fatalf("Failed to close stdin writer: %v", err)
+	}
+
+	result, err := getSecretInput("", "-", "")
+	if err != nil {
+		t.Fatalf("Unexpected error reading stdin input: %v", err)
+	}
+	if result != expected {
+		t.Fatalf("getSecretInput(\"-\") = %q, expected %q", result, expected)
 	}
 }
 

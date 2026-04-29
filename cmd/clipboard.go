@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"sort"
@@ -43,6 +44,13 @@ func getSecretInput(data, dataFile, prompt string) (string, error) {
 	}
 
 	if dataFile != "" {
+		if dataFile == "-" {
+			content, err := io.ReadAll(os.Stdin)
+			if err != nil {
+				return "", fmt.Errorf("failed to read secret value from stdin: %w", err)
+			}
+			return string(content), nil
+		}
 		content, err := os.ReadFile(dataFile)
 		if err != nil {
 			return "", fmt.Errorf("failed to read file %s: %w", dataFile, err)
