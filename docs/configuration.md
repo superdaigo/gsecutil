@@ -96,6 +96,41 @@ list:
     - description
 ```
 
+### Default Labels
+
+You can define default labels that will be automatically applied to all secrets created through `gsecutil create`:
+
+```yaml
+defaults:
+  labels:
+    managed_by: "gsecutil"
+    team: "platform"
+    environment: "dev"
+```
+
+**How it works:**
+- Default labels are automatically applied when creating secrets
+- User-provided labels (via `--labels` flag) take precedence over default labels
+- If a user provides a label with the same key, it overrides the default value
+- Default labels only apply to the `create` command
+
+**Example usage:**
+```bash
+# With defaults.labels configured as above:
+
+# Create secret with only default labels
+gsecutil create my-secret --data "secret-value"
+# Results in labels: managed_by=gsecutil, team=platform, environment=dev
+
+# Create secret with additional labels
+gsecutil create my-secret --data "secret-value" --labels version=1.0
+# Results in labels: managed_by=gsecutil, team=platform, environment=dev, version=1.0
+
+# Override a default label
+gsecutil create my-secret --data "secret-value" --labels environment=production
+# Results in labels: managed_by=gsecutil, team=platform, environment=production
+```
+
 ### Credential Documentation
 
 Credential names in the config file are **bare names** (without the prefix). The prefix is transparent — you never include it in config entries or command arguments.
@@ -308,7 +343,7 @@ credentials:
 ```yaml
 project: "enterprise-secrets"
 prefix: "platform-"
-defaults:  # Planned feature — not yet implemented
+defaults:
   labels:
     managed_by: "gsecutil"
     team: "platform"

@@ -26,6 +26,9 @@ or interactively (prompt).`,
 		labels, _ := cmd.Flags().GetStringSlice("labels")
 		title, _ := cmd.Flags().GetString("title")
 
+		// Merge default labels from config with user-provided labels
+		labels = mergeLabelsWithDefaults(labels)
+
 		// Create command should fail for existing secrets.
 		exists, err := secretExists(secretName, project)
 		if err != nil {
@@ -117,4 +120,43 @@ func saveTitleToConfig(secretName, title string) error {
 	updateConfigWithMetadata(config, secretName, title, nil)
 
 	return saveConfig(config)
+}
+
+// mergeLabelsWithDefaults merges default labels from config with user-provided labels.
+// User-provided labels take precedence over default labels.
+func mergeLabelsWithDefaults(userLabels []string) []string {
+	config := GetConfig()
+
+	// If no default labels configured, return user labels as-is
+	if len(config.Defaults.Labels) == 0 {
+		return userLabels
+	}
+
+	// Parse user-provided labels into a map
+	userLabelMap := make(map[string]string)
+	for _, label := range userLabels {
+		parts := strings.SplitN(label, "=", 2)
+		if len(parts) == 2 {
+			userLabelMap[parts[0]] = parts[1]
+		}
+	}
+
+	// Start with default labels
+	mergedMap := make(map[string]string)
+	for key, value := range config.Defaults.Labels {
+		mergedMap[key] = value
+	}
+
+	// Override with user-provided labels
+	for key, value := range userLabelMap {
+		mergedMap[key] = value
+	}
+
+	// Convert back to string slice format
+	result := make([]string, 0, len(mergedMap))
+	for key, value := range mergedMap {
+		result = append(result, fmt.Sprintf("%s=%s", key, value))
+	}
+
+	return result
 }
