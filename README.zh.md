@@ -1,6 +1,6 @@
 # gsecutil - Google Secret Manager 实用工具
 
-🚀 一个简化的 Google Secret Manager 命令行包装器，支持配置文件和团队友好功能。
+Google Secret Manager 的简化命令行封装工具，可作为项目级密码管理器使用。通过直观的命令、剪贴板集成、版本控制、团队友好的配置文件和审计日志来存储、检索和管理密钥。
 
 ## 🌍 语言版本
 
@@ -17,31 +17,8 @@
 
 ### 安装
 
-从[发布页面](https://github.com/superdaigo/gsecutil/releases)下载适合您平台的最新二进制文件：
+从[发布页面](https://github.com/superdaigo/gsecutil/releases)下载适用于您平台的最新二进制文件，或使用 Go 安装：
 
-```bash
-# macOS Apple Silicon
-curl -L https://github.com/superdaigo/gsecutil/releases/latest/download/gsecutil-darwin-arm64 -o gsecutil
-chmod +x gsecutil
-sudo mv gsecutil /usr/local/bin/
-
-# macOS Intel
-curl -L https://github.com/superdaigo/gsecutil/releases/latest/download/gsecutil-darwin-amd64 -o gsecutil
-chmod +x gsecutil
-sudo mv gsecutil /usr/local/bin/
-
-# Linux
-curl -L https://github.com/superdaigo/gsecutil/releases/latest/download/gsecutil-linux-amd64 -o gsecutil
-chmod +x gsecutil
-sudo mv gsecutil /usr/local/bin/
-
-# Windows (PowerShell)
-Invoke-WebRequest -Uri "https://github.com/superdaigo/gsecutil/releases/latest/download/gsecutil-windows-amd64.exe" -OutFile "gsecutil.exe"
-# Move to a directory in your PATH, e.g., C:\Windows\System32
-Move-Item gsecutil.exe C:\Windows\System32\gsecutil.exe
-```
-
-或使用 Go 安装：
 ```bash
 go install github.com/superdaigo/gsecutil@latest
 ```
@@ -49,7 +26,7 @@ go install github.com/superdaigo/gsecutil@latest
 ### 先决条件
 
 - 已安装并认证 [Google Cloud SDK (gcloud)](https://cloud.google.com/sdk/docs/install)
-- 启用了 Secret Manager API 的 Google Cloud 项目
+- 已启用 Secret Manager API 的 Google Cloud 项目
 
 ### 认证
 
@@ -66,65 +43,47 @@ export GSECUTIL_PROJECT=YOUR_PROJECT_ID
 
 ## 基本用法
 
-### 创建密钥
+每个项目通常都有自己的配置文件，用于存储项目 ID、密钥命名约定和元数据属性。
+
+### 1. 创建配置文件
+
+运行交互式设置以生成配置文件。系统将提示您输入 Google Cloud 项目 ID、密钥名称前缀、默认列表属性以及可选的示例凭证。生成的文件默认保存在当前目录中，名为 `gsecutil.conf`（使用 `--home` 可保存到 `~/.config/gsecutil/gsecutil.conf`）。
+
 ```bash
-# 交互式输入
-gsecutil create database-password
-
-# 从命令行
-gsecutil create api-key -d "sk-1234567890"
-
-# 从文件
-gsecutil create config --data-file ./config.json
+gsecutil config init
 ```
 
-### 获取密钥
-```bash
-# 获取最新版本
-gsecutil get database-password
-
-# 复制到剪贴板
-gsecutil get api-key --clipboard
-
-# 获取特定版本
-gsecutil get api-key --version 2
-```
-
-### 列出密钥
-```bash
-# 列出所有密钥
-gsecutil list
-
-# 按标签过滤
-gsecutil list --filter "labels.env=prod"
-```
-
-### 更新密钥
-```bash
-# 交互式输入
-gsecutil update database-password
-
-# 从命令行
-gsecutil update api-key -d "new-secret-value"
-```
-
-### 删除密钥
-```bash
-gsecutil delete old-secret
-```
-
-## 配置
-
-gsecutil 支持项目特定设置的配置文件。配置文件按以下顺序搜索：
-
+配置文件按以下顺序搜索：
 1. `--config` 标志（如果指定）
 2. 当前目录：`gsecutil.conf`
 3. 主目录：`~/.config/gsecutil/gsecutil.conf`
 
+### 2. 管理密钥
+
+```bash
+# 创建密钥
+gsecutil create database-password
+
+# 获取最新版本
+gsecutil get database-password
+
+# 复制到剪贴板
+gsecutil get database-password --clipboard
+
+# 列出所有密钥
+gsecutil list
+
+# 更新密钥
+gsecutil update database-password
+
+# 删除密钥
+gsecutil delete database-password
+```
+
 ### 配置示例
 
 ```yaml
-# 项目 ID（如果通过环境变量或 gcloud 设置则为可选）
+# 项目 ID（如果已通过环境变量或 gcloud 设置，则为可选）
 project: "my-project-id"
 
 # 用于团队组织的密钥名称前缀
@@ -137,7 +96,7 @@ list:
     - owner
     - environment
 
-# 凭据元数据（名称为裸名 — 前缀会自动添加）
+# 凭证元数据（名称为裸名 — 前缀自动添加）
 credentials:
   - name: "database-password"    # 访问 "team-shared-database-password"
     title: "Production Database Password"
@@ -145,30 +104,9 @@ credentials:
     owner: "backend-team"
 ```
 
-> **前缀是透明的：** 配置了前缀时，在命令、配置和 CSV 文件中始终使用裸名（不含前缀）。前缀会被自动添加和删除。
-
-### 快速开始
-
-```bash
-# 交互式生成配置
-gsecutil config init
-
-# 或创建项目特定配置
-echo 'project: "my-project-123"' > gsecutil.conf
-```
+> **前缀是透明的：** 配置前缀后，您在命令、配置和 CSV 文件中始终使用裸名。前缀会自动添加和去除。
 
 有关详细的配置选项，请参阅 [docs/configuration.md](docs/configuration.md)。
-
-## 主要功能
-
-- ✅ **简单的 CRUD 操作** - 用于管理密钥的直观命令
-- ✅ **剪贴板集成** - 直接将密钥复制到剪贴板
-- ✅ **版本管理** - 访问特定版本并管理版本生命周期
-- ✅ **配置文件支持** - 团队友好的元数据和组织
-- ✅ **访问管理** - 基本的 IAM 策略管理
-- ✅ **审计日志** - 查看谁在何时访问了密钥
-- ✅ **多种输入方法** - 交互式、内联或基于文件
-- ✅ **跨平台** - Linux、macOS、Windows（amd64/arm64）
 
 ## 文档
 
@@ -177,36 +115,13 @@ echo 'project: "my-project-123"' > gsecutil.conf
 - **[审计日志设置](docs/audit-logging.md)** - 启用和使用审计日志
 - **[故障排除指南](docs/troubleshooting.md)** - 常见问题和解决方案
 - **[构建说明](BUILD.md)** - 从源代码构建
-- **[开发指南](WARP.md)** - 使用 WARP AI 进行开发
-
-## 常用命令
-
-```bash
-# 显示密钥详情
-gsecutil describe my-secret
-
-# 显示版本历史
-gsecutil describe my-secret --show-versions
-
-# 查看审计日志
-gsecutil auditlog my-secret
-
-# 管理访问
-gsecutil access list my-secret
-gsecutil access grant my-secret --principal user:alice@example.com
-
-# 验证配置
-gsecutil config validate
-
-# 显示配置
-gsecutil config show
-```
+- **[开发指南](WARP.md)** - 使用 WARP AI 开发
 
 ## 许可证
 
-本项目根据 MIT 许可证授权 - 有关详细信息，请参阅 LICENSE 文件。
+本项目根据 MIT 许可证授权 - 详情请参阅 LICENSE 文件。
 
-## 相关链接
+## 相关
 
 - [Google Cloud SDK](https://cloud.google.com/sdk)
 - [Secret Manager 文档](https://cloud.google.com/secret-manager/docs)

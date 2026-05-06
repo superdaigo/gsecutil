@@ -1,6 +1,6 @@
 # gsecutil - Google Secret Manager उपयोगिता
 
-🚀 कॉन्फ़िगरेशन फ़ाइल समर्थन और टीम-अनुकूल सुविधाओं के साथ Google Secret Manager के लिए एक सरलीकृत कमांड-लाइन रैपर।
+Google Secret Manager के लिए एक सरलीकृत कमांड-लाइन रैपर जो प्रति-परियोजना पासवर्ड मैनेजर की तरह काम करता है। सहज कमांड, क्लिपबोर्ड एकीकरण, संस्करण नियंत्रण, टीम-अनुकूल कॉन्फ़िगरेशन फ़ाइलों और ऑडिट लॉग के साथ सीक्रेट्स संग्रहीत, पुनर्प्राप्त और प्रबंधित करें।
 
 ## 🌍 भाषा संस्करण
 
@@ -8,7 +8,7 @@
 - **日本語** - [README.ja.md](README.ja.md)
 - **中文** - [README.zh.md](README.zh.md)
 - **Español** - [README.es.md](README.es.md)
-- **हिंदी** - [README.hi.md](README.hi.md) (वर्तमान)
+- **हिंदी** - [README.hi.md](README.hi.md)（वर्तमान）
 - **Português** - [README.pt.md](README.pt.md)
 
 > **नोट**: सभी गैर-अंग्रेजी संस्करण मशीन-अनुवादित हैं। सबसे सटीक जानकारी के लिए, अंग्रेजी संस्करण देखें।
@@ -17,31 +17,8 @@
 
 ### स्थापना
 
-[रिलीज़ पेज](https://github.com/superdaigo/gsecutil/releases) से अपने प्लेटफ़ॉर्म के लिए नवीनतम बाइनरी डाउनलोड करें:
+अपने प्लेटफ़ॉर्म के लिए [रिलीज़ पेज](https://github.com/superdaigo/gsecutil/releases) से नवीनतम बाइनरी डाउनलोड करें, या Go के साथ स्थापित करें:
 
-```bash
-# macOS Apple Silicon
-curl -L https://github.com/superdaigo/gsecutil/releases/latest/download/gsecutil-darwin-arm64 -o gsecutil
-chmod +x gsecutil
-sudo mv gsecutil /usr/local/bin/
-
-# macOS Intel
-curl -L https://github.com/superdaigo/gsecutil/releases/latest/download/gsecutil-darwin-amd64 -o gsecutil
-chmod +x gsecutil
-sudo mv gsecutil /usr/local/bin/
-
-# Linux
-curl -L https://github.com/superdaigo/gsecutil/releases/latest/download/gsecutil-linux-amd64 -o gsecutil
-chmod +x gsecutil
-sudo mv gsecutil /usr/local/bin/
-
-# Windows (PowerShell)
-Invoke-WebRequest -Uri "https://github.com/superdaigo/gsecutil/releases/latest/download/gsecutil-windows-amd64.exe" -OutFile "gsecutil.exe"
-# Move to a directory in your PATH, e.g., C:\Windows\System32
-Move-Item gsecutil.exe C:\Windows\System32\gsecutil.exe
-```
-
-या Go के साथ स्थापित करें:
 ```bash
 go install github.com/superdaigo/gsecutil@latest
 ```
@@ -66,60 +43,42 @@ export GSECUTIL_PROJECT=YOUR_PROJECT_ID
 
 ## मूल उपयोग
 
-### एक सीक्रेट बनाएं
+प्रत्येक प्रोजेक्ट में आमतौर पर अपनी कॉन्फ़िगरेशन फ़ाइल होती है जो प्रोजेक्ट ID, सीक्रेट नामकरण सम्मेलन और मेटाडेटा विशेषताओं को संग्रहीत करती है।
+
+### 1. कॉन्फ़िगरेशन फ़ाइल बनाएं
+
+एक कॉन्फ़िगरेशन फ़ाइल बनाने के लिए इंटरैक्टिव सेटअप चलाएं। यह आपसे आपका Google Cloud प्रोजेक्ट ID, सीक्रेट नाम उपसर्ग, डिफ़ॉल्ट सूची विशेषताएं और वैकल्पिक उदाहरण क्रेडेंशियल्स पूछेगा। जेनरेट की गई फ़ाइल डिफ़ॉल्ट रूप से वर्तमान निर्देशिका में `gsecutil.conf` के रूप में सहेजी जाती है (`--home` का उपयोग करके `~/.config/gsecutil/gsecutil.conf` में सहेजें)।
+
 ```bash
-# इंटरैक्टिव इनपुट
-gsecutil create database-password
-
-# कमांड लाइन से
-gsecutil create api-key -d "sk-1234567890"
-
-# फ़ाइल से
-gsecutil create config --data-file ./config.json
+gsecutil config init
 ```
 
-### एक सीक्रेट प्राप्त करें
+कॉन्फ़िगरेशन फ़ाइल इस क्रम में खोजी जाती है:
+1. `--config` फ्लैग (यदि निर्दिष्ट है)
+2. वर्तमान निर्देशिका: `gsecutil.conf`
+3. होम निर्देशिका: `~/.config/gsecutil/gsecutil.conf`
+
+### 2. सीक्रेट्स प्रबंधित करें
+
 ```bash
+# एक सीक्रेट बनाएं
+gsecutil create database-password
+
 # नवीनतम संस्करण प्राप्त करें
 gsecutil get database-password
 
 # क्लिपबोर्ड में कॉपी करें
-gsecutil get api-key --clipboard
+gsecutil get database-password --clipboard
 
-# विशिष्ट संस्करण प्राप्त करें
-gsecutil get api-key --version 2
-```
-
-### सीक्रेट्स सूचीबद्ध करें
-```bash
 # सभी सीक्रेट्स सूचीबद्ध करें
 gsecutil list
 
-# लेबल द्वारा फ़िल्टर करें
-gsecutil list --filter "labels.env=prod"
-```
-
-### एक सीक्रेट अपडेट करें
-```bash
-# इंटरैक्टिव इनपुट
+# एक सीक्रेट अपडेट करें
 gsecutil update database-password
 
-# कमांड लाइन से
-gsecutil update api-key -d "new-secret-value"
+# एक सीक्रेट हटाएं
+gsecutil delete database-password
 ```
-
-### एक सीक्रेट हटाएं
-```bash
-gsecutil delete old-secret
-```
-
-## कॉन्फ़िगरेशन
-
-gsecutil प्रोजेक्ट-विशिष्ट सेटिंग्स के लिए कॉन्फ़िगरेशन फ़ाइलों का समर्थन करता है। कॉन्फ़िगरेशन फ़ाइलें इस क्रम में खोजी जाती हैं:
-
-1. `--config` फ्लैग (यदि निर्दिष्ट है)
-2. वर्तमान डाइरेक्टरी: `gsecutil.conf`
-3. होम डाइरेक्टरी: `~/.config/gsecutil/gsecutil.conf`
 
 ### कॉन्फ़िगरेशन उदाहरण
 
@@ -137,7 +96,7 @@ list:
     - owner
     - environment
 
-# क्रेडेंशियल मेटाडेटा (नाम सादे हैं — प्रीफ़िक्स स्वचालित रूप से जोड़ा जाता है)
+# क्रेडेंशियल मेटाडेटा (नाम सादे हैं — उपसर्ग स्वचालित रूप से जोड़ा जाता है)
 credentials:
   - name: "database-password"    # "team-shared-database-password" तक पहुंचता है
     title: "Production Database Password"
@@ -145,30 +104,9 @@ credentials:
     owner: "backend-team"
 ```
 
-> **प्रीफ़िक्स पारदर्शी है:** जब प्रीफ़िक्स कॉन्फ़िगर किया जाता है, तो कमांड, कॉन्फ़िग और CSV फ़ाइलों में हमेशा सादे नाम (बिना प्रीफ़िक्स के) का उपयोग करें। प्रीफ़िक्स स्वचालित रूप से जोड़ा और हटाया जाता है।
-
-### त्वरित प्रारंभ
-
-```bash
-# इंटरैक्टिव रूप से कॉन्फ़िगरेशन उत्पन्न करें
-gsecutil config init
-
-# या प्रोजेक्ट-विशिष्ट कॉन्फ़िग बनाएं
-echo 'project: "my-project-123"' > gsecutil.conf
-```
+> **उपसर्ग पारदर्शी है:** जब उपसर्ग कॉन्फ़िगर किया जाता है, तो कमांड्स, कॉन्फ़िग और CSV फ़ाइलों में हमेशा सादे नामों का उपयोग करें। उपसर्ग स्वचालित रूप से जोड़ा और हटा दिया जाता है।
 
 विस्तृत कॉन्फ़िगरेशन विकल्पों के लिए, [docs/configuration.md](docs/configuration.md) देखें।
-
-## मुख्य विशेषताएं
-
-- ✅ **सरल CRUD संचालन** - सीक्रेट्स प्रबंधित करने के लिए सहज कमांड
-- ✅ **क्लिपबोर्ड एकीकरण** - सीक्रेट्स को सीधे क्लिपबोर्ड में कॉपी करें
-- ✅ **संस्करण प्रबंधन** - विशिष्ट संस्करणों तक पहुंच और संस्करण जीवनचक्र प्रबंधित करें
-- ✅ **कॉन्फ़िगरेशन फ़ाइल समर्थन** - टीम-अनुकूल मेटाडेटा और संगठन
-- ✅ **एक्सेस प्रबंधन** - बुनियादी IAM नीति प्रबंधन
-- ✅ **ऑडिट लॉग** - देखें कि किसने कब सीक्रेट्स तक पहुंच बनाई
-- ✅ **एकाधिक इनपुट विधियां** - इंटरैक्टिव, इनलाइन, या फ़ाइल-आधारित
-- ✅ **क्रॉस-प्लेटफ़ॉर्म** - Linux, macOS, Windows (amd64/arm64)
 
 ## दस्तावेज़ीकरण
 
@@ -178,29 +116,6 @@ echo 'project: "my-project-123"' > gsecutil.conf
 - **[समस्या निवारण गाइड](docs/troubleshooting.md)** - सामान्य समस्याएं और समाधान
 - **[बिल्ड निर्देश](BUILD.md)** - स्रोत से बिल्ड करें
 - **[विकास गाइड](WARP.md)** - WARP AI के साथ विकास
-
-## सामान्य कमांड
-
-```bash
-# सीक्रेट विवरण दिखाएं
-gsecutil describe my-secret
-
-# संस्करण इतिहास दिखाएं
-gsecutil describe my-secret --show-versions
-
-# ऑडिट लॉग देखें
-gsecutil auditlog my-secret
-
-# एक्सेस प्रबंधित करें
-gsecutil access list my-secret
-gsecutil access grant my-secret --principal user:alice@example.com
-
-# कॉन्फ़िगरेशन सत्यापित करें
-gsecutil config validate
-
-# कॉन्फ़िगरेशन दिखाएं
-gsecutil config show
-```
 
 ## लाइसेंस
 
