@@ -104,7 +104,9 @@ credentials:
     owner: "backend-team"
 ```
 
-> **Prefix is transparent:** When a prefix is configured, you always use bare names in commands, config, and CSV files. The prefix is added and stripped automatically.
+> **Prefix handling:** When a prefix is configured:
+> - **Commands and config files**: Use bare names (prefix is added/stripped automatically)
+> - **CSV files**: Use full names including the prefix (for import/export compatibility)
 
 For detailed configuration options, see [docs/configuration.md](docs/configuration.md).
 
