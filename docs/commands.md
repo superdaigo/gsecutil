@@ -235,13 +235,10 @@ gsecutil describe database-password --format json
 
 **Information Displayed:**
 - Basic metadata (name, creation time, ETag)
-- Config attributes (from configuration file)
-- Default version information
+- Labels
 - Replication strategy
-- Labels and annotations
-- Version aliases
-- Expiration and rotation settings
-- Pub/Sub topics
+- Default version information
+- Config attributes (from configuration file)
 
 ---
 

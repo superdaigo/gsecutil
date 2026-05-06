@@ -179,7 +179,7 @@ The `describe` command automatically shows all attributes defined in the configu
 
 ```bash
 # Shows Secret Manager metadata + all config attributes
-gsecutil describe team-db-prod
+gsecutil describe db-prod
 
 # Example output:
 # Name: projects/my-project/secrets/team-db-prod
@@ -308,7 +308,7 @@ credentials:
 ```yaml
 project: "enterprise-secrets"
 prefix: "platform-"
-defaults:
+defaults:  # Planned feature — not yet implemented
   labels:
     managed_by: "gsecutil"
     team: "platform"
@@ -355,16 +355,16 @@ gsecutil list --no-prefix-filter
 gsecutil config show
 
 # Force showing attributes
-gsecutil list --show-attributes title,owner,environment
+gsecutil list --show title,owner,environment
 
 # Check what attributes are available for filtering
-gsecutil list --show-attributes title --filter-attributes environment=production
+gsecutil list --show title --attr-filter environment=production
 ```
 
 ### Project not detected
 ```bash
 # Check project resolution order
-gsecutil config debug
+gsecutil config show
 
 # Override with command line
 gsecutil --project my-project list
@@ -376,8 +376,8 @@ gsecutil --project my-project list
 gsecutil config show | grep -A5 "db-prod"
 
 # Verify secret exists and has attributes
-gsecutil list --show-attributes title
+gsecutil list --show title
 
 # Check if config file is being loaded
-gsecutil config debug
+gsecutil config show
 ```

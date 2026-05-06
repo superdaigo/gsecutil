@@ -16,7 +16,7 @@ list:
     - environment
 
 credentials:
-  - name: "team-db-prod"
+  - name: "db-prod"
     title: "Production Database"
     description: "PostgreSQL master database connection string"
     environment: "production"
@@ -29,7 +29,7 @@ credentials:
     database_host: "db.prod.company.com"
     database_port: "5432"
 
-  - name: "team-stripe-live"
+  - name: "stripe-live"
     title: "Stripe Live API Key"
     description: "Production Stripe API key for payment processing"
     environment: "production"

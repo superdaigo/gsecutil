@@ -18,21 +18,21 @@ list:
     - sensitive_level
 
 credentials:
-  - name: "team-db-prod"
+  - name: "db-prod"
     title: "Production Database"
     description: "PostgreSQL master database"
     environment: "production"
     owner: "backend-team"
     sensitive_level: "critical"
 
-  - name: "team-db-staging"
+  - name: "db-staging"
     title: "Staging Database"
     description: "PostgreSQL staging database"
     environment: "staging"
     owner: "backend-team"
     sensitive_level: "medium"
 
-  - name: "team-stripe-live"
+  - name: "stripe-live"
     title: "Stripe Live API Key"
     description: "Production payment processing"
     environment: "production"
@@ -40,7 +40,7 @@ credentials:
     sensitive_level: "critical"
     vendor: "Stripe"
 
-  - name: "team-sendgrid-api"
+  - name: "sendgrid-api"
     title: "SendGrid API Key"
     description: "Email delivery service"
     environment: "production"
@@ -218,7 +218,7 @@ team-secret-1
 team-secret-2
 
 # Can force attribute display with CLI parameter
-$ gsecutil list --show-attributes title
+$ gsecutil list --show title
 NAME               TITLE
 team-secret-1      (no title)
 team-secret-2      (no title)
