@@ -37,9 +37,9 @@ or --upsert to create new secrets and update existing ones.
 The --update-config flag will update the configuration file with titles and
 attributes from the CSV.
 
-When a prefix is configured, CSV names are treated as bare names and the prefix
-is applied automatically. Names that cannot be resolved to valid prefixed secrets
-are skipped.`,
+When a prefix is configured, all CSV names must include the prefix. Names that
+do not match the configured prefix are skipped to prevent cross-environment
+pollution.`,
 	Example: `  gsecutil import secrets.csv
   gsecutil import secrets.csv --update
   gsecutil import secrets.csv --upsert
@@ -334,7 +334,7 @@ func resolveImportSecretName(userInputName, prefix string) (resolvedName, bareNa
 	}
 
 	if strings.Contains(userInputName, "/") {
-		return "", "", true, fmt.Sprintf("name '%s' is invalid; use bare secret names (without resource path)", userInputName)
+		return "", "", true, fmt.Sprintf("name '%s' is invalid; use secret names (without resource path)", userInputName)
 	}
 
 	if strings.HasPrefix(userInputName, prefix) {
@@ -345,12 +345,7 @@ func resolveImportSecretName(userInputName, prefix string) (resolvedName, bareNa
 		return userInputName, bareName, false, ""
 	}
 
-	resolvedName = prefix + userInputName
-	if !strings.HasPrefix(resolvedName, prefix) {
-		return "", "", true, fmt.Sprintf("name '%s' does not match configured prefix '%s'", userInputName, prefix)
-	}
-
-	return resolvedName, userInputName, false, ""
+	return "", "", true, fmt.Sprintf("name '%s' does not match configured prefix '%s'", userInputName, prefix)
 }
 
 func extractColumnsData(header, record []string, nameIdx, valueIdx int) (map[string]string, string, map[string]string) {

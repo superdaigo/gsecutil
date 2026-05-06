@@ -572,30 +572,42 @@ func TestImportCommandPrefix(t *testing.T) {
 		prefix       string
 		csvName      string
 		expectedName string
+		expectSkip   bool
 	}{
 		{
-			name:         "Import - CSV name used as-is (no prefix)",
+			name:         "Import - no prefix, name used as-is",
 			prefix:       "",
 			csvName:      "imported-secret",
 			expectedName: "imported-secret",
+			expectSkip:   false,
 		},
 		{
-			name:         "Import - CSV name used as-is (with prefix configured)",
-			prefix:       "bulk-",
-			csvName:      "csv-secret",
-			expectedName: "csv-secret",
-		},
-		{
-			name:         "Import - CSV name includes prefix, used as-is",
+			name:         "Import - name matches prefix",
 			prefix:       "batch-",
 			csvName:      "batch-import-key",
 			expectedName: "batch-import-key",
+			expectSkip:   false,
 		},
 		{
-			name:         "Import - complex name with special chars",
+			name:         "Import - name does not match prefix, skipped",
+			prefix:       "bulk-",
+			csvName:      "csv-secret",
+			expectedName: "",
+			expectSkip:   true,
+		},
+		{
+			name:         "Import - complex name with matching prefix",
+			prefix:       "v2-",
+			csvName:      "v2-api_key-prod",
+			expectedName: "v2-api_key-prod",
+			expectSkip:   false,
+		},
+		{
+			name:         "Import - complex name with non-matching prefix",
 			prefix:       "v2-",
 			csvName:      "api_key-prod",
-			expectedName: "api_key-prod",
+			expectedName: "",
+			expectSkip:   true,
 		},
 	}
 
@@ -605,53 +617,50 @@ func TestImportCommandPrefix(t *testing.T) {
 			defer func() { globalConfig = originalConfig }()
 
 			globalConfig = &Config{Prefix: tt.prefix}
+			resolvedName, _, skip, _ := resolveImportSecretName(tt.csvName, tt.prefix)
 
-			// Import command uses CSV name as-is (literally)
-			userInputName := tt.csvName
-			secretName := userInputName // CSV name is used literally
-
-			if secretName != tt.expectedName {
-				t.Errorf("Import command: expected %q, got %q", tt.expectedName, secretName)
+			if skip != tt.expectSkip {
+				t.Errorf("Import command: expected skip=%v, got skip=%v", tt.expectSkip, skip)
+			}
+			if !skip && resolvedName != tt.expectedName {
+				t.Errorf("Import command: expected %q, got %q", tt.expectedName, resolvedName)
 			}
 		})
 	}
 }
 
-// TestImportUsesLiteralCSVNames tests that import uses CSV names literally
+// TestImportUsesLiteralCSVNames
 func TestImportUsesLiteralCSVNames(t *testing.T) {
 	tests := []struct {
 		name         string
 		prefix       string
 		csvName      string
 		expectedName string
+		expectSkip   bool
 		description  string
 	}{
 		{
-			name:         "CSV name 'sec1' remains 'sec1'",
+			name:         "CSV name 'sec1' does not match prefix 'pref-', skipped",
 			prefix:       "pref-",
 			csvName:      "sec1",
-			expectedName: "sec1",
-			description:  "CSV name without prefix is used as-is",
+			expectedName: "",
+			expectSkip:   true,
+			description:  "CSV name without matching prefix is skipped",
 		},
 		{
-			name:         "CSV name 'pref-sec1' remains 'pref-sec1'",
+			name:         "CSV name 'pref-sec1' matches prefix 'pref-'",
 			prefix:       "pref-",
 			csvName:      "pref-sec1",
 			expectedName: "pref-sec1",
-			description:  "CSV name with prefix is used as-is",
+			expectSkip:   false,
+			description:  "CSV name with matching prefix is accepted",
 		},
 		{
-			name:         "Different secrets: 'sec1' vs 'pref-sec1'",
-			prefix:       "pref-",
-			csvName:      "sec1",
-			expectedName: "sec1",
-			description:  "These are different secrets",
-		},
-		{
-			name:         "No prefix configured - name unchanged",
+			name:         "No prefix configured - name used as-is",
 			prefix:       "",
 			csvName:      "my-secret",
 			expectedName: "my-secret",
+			expectSkip:   false,
 			description:  "Without prefix, CSV name is used as-is",
 		},
 	}
@@ -660,22 +669,22 @@ func TestImportUsesLiteralCSVNames(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			originalConfig := globalConfig
 			defer func() { globalConfig = originalConfig }()
-
 			globalConfig = &Config{Prefix: tt.prefix}
 
-			// Import uses CSV names literally (no prefix manipulation)
-			userInputName := tt.csvName
-			secretName := userInputName // Used as-is
+			resolvedName, _, skip, _ := resolveImportSecretName(tt.csvName, tt.prefix)
 
-			if secretName != tt.expectedName {
+			if skip != tt.expectSkip {
+				t.Errorf("%s: expected skip=%v, got skip=%v", tt.description, tt.expectSkip, skip)
+			}
+			if !skip && resolvedName != tt.expectedName {
 				t.Errorf("%s: Expected %q, got %q (CSV=%q, prefix=%q)",
-					tt.description, tt.expectedName, secretName, tt.csvName, tt.prefix)
+					tt.description, tt.expectedName, resolvedName, tt.csvName, tt.prefix)
 			}
 		})
 	}
 }
 
-// TestPrefixConsistencyAcrossCommands ensures all commands handle prefixes the same way
+// TestPrefixConsistencyAcrossCommands
 func TestPrefixConsistencyAcrossCommands(t *testing.T) {
 	testCases := []struct {
 		prefix    string

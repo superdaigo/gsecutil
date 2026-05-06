@@ -446,7 +446,109 @@ secret2,value2,Title 2,staging,bob`,
 	}
 }
 
-// Helper function to check if a string contains a substring
+// TestResolveImportSecretName tests the import secret name resolution with prefix validation
+func TestResolveImportSecretName(t *testing.T) {
+	tests := []struct {
+		name         string
+		prefix       string
+		userInput    string
+		expectSkip   bool
+		expectedRes  string
+		expectedBare string
+	}{
+		{
+			name:         "No prefix - name used as-is",
+			prefix:       "",
+			userInput:    "my-secret",
+			expectSkip:   false,
+			expectedRes:  "my-secret",
+			expectedBare: "my-secret",
+		},
+		{
+			name:         "Name matches prefix",
+			prefix:       "dev-",
+			userInput:    "dev-my-secret",
+			expectSkip:   false,
+			expectedRes:  "dev-my-secret",
+			expectedBare: "my-secret",
+		},
+		{
+			name:         "Name does not match prefix - skipped",
+			prefix:       "dev-",
+			userInput:    "my-secret",
+			expectSkip:   true,
+			expectedRes:  "",
+			expectedBare: "",
+		},
+		{
+			name:         "Name with slash - invalid",
+			prefix:       "dev-",
+			userInput:    "projects/p/secrets/dev-my-secret",
+			expectSkip:   true,
+			expectedRes:  "",
+			expectedBare: "",
+		},
+		{
+			name:         "Name equals prefix - invalid",
+			prefix:       "dev-",
+			userInput:    "dev-",
+			expectSkip:   true,
+			expectedRes:  "",
+			expectedBare: "",
+		},
+		{
+			name:         "No prefix with slash - accepted (no validation)",
+			prefix:       "",
+			userInput:    "projects/p/secrets/my-secret",
+			expectSkip:   false,
+			expectedRes:  "projects/p/secrets/my-secret",
+			expectedBare: "projects/p/secrets/my-secret",
+		},
+		{
+			name:         "Prefix with underscore - matching",
+			prefix:       "team_",
+			userInput:    "team_my-secret",
+			expectSkip:   false,
+			expectedRes:  "team_my-secret",
+			expectedBare: "my-secret",
+		},
+		{
+			name:         "Prefix with underscore - non-matching",
+			prefix:       "team_",
+			userInput:    "dev-my-secret",
+			expectSkip:   true,
+			expectedRes:  "",
+			expectedBare: "",
+		},
+		{
+			name:         "Empty input name",
+			prefix:       "dev-",
+			userInput:    "",
+			expectSkip:   true,
+			expectedRes:  "",
+			expectedBare: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resolved, bare, skip, _ := resolveImportSecretName(tt.userInput, tt.prefix)
+
+			if skip != tt.expectSkip {
+				t.Errorf("Expected skip=%v, got skip=%v", tt.expectSkip, skip)
+			}
+			if !skip {
+				if resolved != tt.expectedRes {
+					t.Errorf("Expected resolved=%q, got %q", tt.expectedRes, resolved)
+				}
+				if bare != tt.expectedBare {
+					t.Errorf("Expected bare=%q, got %q", tt.expectedBare, bare)
+				}
+			}
+		})
+	}
+}
+
 func contains(s, substr string) bool {
 	return len(s) >= len(substr) && (s == substr || len(substr) == 0 ||
 		(len(s) > 0 && len(substr) > 0 && stringContains(s, substr)))
