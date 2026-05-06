@@ -80,7 +80,7 @@ The exported CSV includes:
 
 | Column | Description | Always Present |
 |--------|-------------|----------------|
-| `name` | Secret name (bare, without prefix) | ✓ |
+| `name` | Secret name (full name with prefix) | ✓ |
 | `value` | Secret value | Only with `--with-values` |
 | `title` | Title from config | ✓ |
 | `label:<key>` | Labels (e.g., `label:env`) | If labels exist |
@@ -90,11 +90,11 @@ The exported CSV includes:
 
 ```csv
 name,title,label:env,label:team,owner,rotation_days
-db-password,Database Password,production,backend,alice,30
-api-key,API Key,production,frontend,bob,90
+myapp-db-password,Database Password,production,backend,alice,30
+myapp-api-key,API Key,production,frontend,bob,90
 ```
 
-> The `name` column contains bare names. When importing, the configured prefix is added automatically (e.g., `db-password` → `myapp-db-password`). When exporting, the prefix is stripped from names.
+> **Important:** The `name` column must contain the full secret name including the configured prefix. When a prefix is configured, CSV import validates that all names start with that prefix to prevent cross-environment pollution.
 
 ---
 
@@ -115,7 +115,7 @@ gsecutil import <csv-file> [flags]
 - `--upsert` - Create new secrets and update existing ones
 - `--update-config` - Save titles and attributes to configuration file
 
-**Prefix handling:** When a prefix is configured, it is automatically prepended to all names from the CSV. The CSV file must contain **bare names** (without the prefix).
+**Prefix handling:** When a prefix is configured, CSV names must include the prefix. Names that don't match the configured prefix are skipped to prevent cross-environment pollution.
 
 ### Update Modes
 
@@ -156,7 +156,7 @@ gsecutil import secrets.csv --upsert --update-config
 
 ### Required Columns
 
-- **`name`** - Secret name, **without prefix** (required)
+- **`name`** - Secret name, **with prefix if configured** (required)
 - **`value`** - Secret value (required for creation)
 
 ### Optional Columns
@@ -201,12 +201,12 @@ Error: CSV header contains duplicate column names: 'owner' (columns 3, 4)
 ### 1. Initial Bulk Import
 
 ```bash
-# Create secrets.csv with bare names (prefix "myapp-" is added automatically)
+# Create secrets.csv with full names including prefix "myapp-"
 cat > secrets.csv << 'EOF'
 name,value,title,label:env,owner
-db-prod,secret123,Production DB,production,alice
-db-stage,secret456,Staging DB,staging,alice
-api-key,key789,API Key,production,bob
+myapp-db-prod,secret123,Production DB,production,alice
+myapp-db-stage,secret456,Staging DB,staging,alice
+myapp-api-key,key789,API Key,production,bob
 EOF
 
 # Import with config update
@@ -241,15 +241,15 @@ gsecutil import current.csv --update
 ### 4. Metadata Management (Config-Only)
 
 ```bash
-# Create metadata CSV with bare names (no values)
+# Create metadata CSV with full names including prefix (no values)
 cat > metadata.csv << 'EOF'
 name,title,owner,rotation_days,label:env
-db-password,Database Password,alice,30,production
-api-key,API Key,bob,90,production
+myapp-db-password,Database Password,alice,30,production
+myapp-api-key,API Key,bob,90,production
 EOF
 
-# Update config only
-gsecutil import metadata.csv --update-config
+# Update config only (note: secrets must already exist)
+gsecutil import metadata.csv --update --update-config
 ```
 
 ### 5. Environment Sync
@@ -320,10 +320,10 @@ gpg --decrypt backup-20260207.csv.gpg | gsecutil import /dev/stdin --upsert
 
 ### Workflow
 
-1. **Always use bare names** (without prefix) in CSV files
+1. **Always use full names with prefix** in CSV files
    ```csv
    name,value,label:env,label:team,label:app
-   secret1,val1,production,backend,myapp
+   myapp-secret1,val1,production,backend,myapp
    ```
 
 2. **Use `--update-config` to keep metadata in sync**
