@@ -1,6 +1,6 @@
 # gsecutil - Utilitário do Google Secret Manager
 
-🚀 Um wrapper de linha de comando simplificado para o Google Secret Manager com suporte a arquivo de configuração e recursos amigáveis para equipes.
+Um wrapper de linha de comando simplificado para o Google Secret Manager que funciona como um gerenciador de senhas por projeto. Armazene, recupere e gerencie segredos com comandos intuitivos, integração com a área de transferência, controle de versão, arquivos de configuração amigáveis para equipes e registros de auditoria.
 
 ## 🌍 Versões de Idioma
 
@@ -9,7 +9,7 @@
 - **中文** - [README.zh.md](README.zh.md)
 - **Español** - [README.es.md](README.es.md)
 - **हिंदी** - [README.hi.md](README.hi.md)
-- **Português** - [README.pt.md](README.pt.md) (atual)
+- **Português** - [README.pt.md](README.pt.md)（atual）
 
 > **Nota**: Todas as versões que não estão em inglês são traduzidas por máquina. Para obter as informações mais precisas, consulte a versão em inglês.
 
@@ -17,31 +17,8 @@
 
 ### Instalação
 
-Baixe o binário mais recente para sua plataforma na [página de releases](https://github.com/superdaigo/gsecutil/releases):
+Baixe o binário mais recente para sua plataforma na [página de releases](https://github.com/superdaigo/gsecutil/releases), ou instale com Go:
 
-```bash
-# macOS Apple Silicon
-curl -L https://github.com/superdaigo/gsecutil/releases/latest/download/gsecutil-darwin-arm64 -o gsecutil
-chmod +x gsecutil
-sudo mv gsecutil /usr/local/bin/
-
-# macOS Intel
-curl -L https://github.com/superdaigo/gsecutil/releases/latest/download/gsecutil-darwin-amd64 -o gsecutil
-chmod +x gsecutil
-sudo mv gsecutil /usr/local/bin/
-
-# Linux
-curl -L https://github.com/superdaigo/gsecutil/releases/latest/download/gsecutil-linux-amd64 -o gsecutil
-chmod +x gsecutil
-sudo mv gsecutil /usr/local/bin/
-
-# Windows (PowerShell)
-Invoke-WebRequest -Uri "https://github.com/superdaigo/gsecutil/releases/latest/download/gsecutil-windows-amd64.exe" -OutFile "gsecutil.exe"
-# Move para um diretório no seu PATH, por exemplo, C:\Windows\System32
-Move-Item gsecutil.exe C:\Windows\System32\gsecutil.exe
-```
-
-Ou instale com Go:
 ```bash
 go install github.com/superdaigo/gsecutil@latest
 ```
@@ -66,60 +43,42 @@ export GSECUTIL_PROJECT=YOUR_PROJECT_ID
 
 ## Uso Básico
 
-### Criar um Segredo
+Cada projeto normalmente tem seu próprio arquivo de configuração que armazena o ID do projeto, as convenções de nomenclatura de segredos e os atributos de metadados.
+
+### 1. Criar um Arquivo de Configuração
+
+Execute a configuração interativa para gerar um arquivo de configuração. Você será solicitado a informar o ID do projeto do Google Cloud, o prefixo do nome do segredo, os atributos padrão da lista e as credenciais de exemplo opcionais. O arquivo gerado é salvo como `gsecutil.conf` no diretório atual por padrão (use `--home` para salvar em `~/.config/gsecutil/gsecutil.conf`).
+
 ```bash
-# Entrada interativa
-gsecutil create database-password
-
-# Da linha de comando
-gsecutil create api-key -d "sk-1234567890"
-
-# De um arquivo
-gsecutil create config --data-file ./config.json
+gsecutil config init
 ```
 
-### Obter um Segredo
+O arquivo de configuração é pesquisado nesta ordem:
+1. Flag `--config` (se especificada)
+2. Diretório atual: `gsecutil.conf`
+3. Diretório home: `~/.config/gsecutil/gsecutil.conf`
+
+### 2. Gerenciar Segredos
+
 ```bash
+# Criar um segredo
+gsecutil create database-password
+
 # Obter a versão mais recente
 gsecutil get database-password
 
 # Copiar para a área de transferência
-gsecutil get api-key --clipboard
+gsecutil get database-password --clipboard
 
-# Obter versão específica
-gsecutil get api-key --version 2
-```
-
-### Listar Segredos
-```bash
 # Listar todos os segredos
 gsecutil list
 
-# Filtrar por rótulo
-gsecutil list --filter "labels.env=prod"
-```
-
-### Atualizar um Segredo
-```bash
-# Entrada interativa
+# Atualizar um segredo
 gsecutil update database-password
 
-# Da linha de comando
-gsecutil update api-key -d "new-secret-value"
+# Excluir um segredo
+gsecutil delete database-password
 ```
-
-### Excluir um Segredo
-```bash
-gsecutil delete old-secret
-```
-
-## Configuração
-
-O gsecutil suporta arquivos de configuração para configurações específicas do projeto. Os arquivos de configuração são pesquisados nesta ordem:
-
-1. Flag `--config` (se especificada)
-2. Diretório atual: `gsecutil.conf`
-3. Diretório home: `~/.config/gsecutil/gsecutil.conf`
 
 ### Exemplo de Configuração
 
@@ -137,7 +96,7 @@ list:
     - owner
     - environment
 
-# Metadados de credenciais (nomes são simples — o prefixo é adicionado automaticamente)
+# Metadados de credenciais (os nomes são simples — o prefixo é adicionado automaticamente)
 credentials:
   - name: "database-password"    # acessa "team-shared-database-password"
     title: "Production Database Password"
@@ -145,30 +104,9 @@ credentials:
     owner: "backend-team"
 ```
 
-> **O prefixo é transparente:** Quando um prefixo é configurado, sempre use nomes simples (sem prefixo) em comandos, configuração e arquivos CSV. O prefixo é adicionado e removido automaticamente.
-
-### Início Rápido
-
-```bash
-# Gerar configuração interativamente
-gsecutil config init
-
-# Ou criar configuração específica do projeto
-echo 'project: "my-project-123"' > gsecutil.conf
-```
+> **O prefixo é transparente:** Quando um prefixo é configurado, sempre use nomes simples em comandos, configuração e arquivos CSV. O prefixo é adicionado e removido automaticamente.
 
 Para opções detalhadas de configuração, consulte [docs/configuration.md](docs/configuration.md).
-
-## Recursos Principais
-
-- ✅ **Operações CRUD Simples** - Comandos intuitivos para gerenciar segredos
-- ✅ **Integração com Área de Transferência** - Copie segredos diretamente para a área de transferência
-- ✅ **Gerenciamento de Versões** - Acesse versões específicas e gerencie o ciclo de vida das versões
-- ✅ **Suporte a Arquivo de Configuração** - Metadados e organização amigáveis para equipes
-- ✅ **Gerenciamento de Acesso** - Gerenciamento básico de políticas IAM
-- ✅ **Logs de Auditoria** - Veja quem acessou segredos e quando
-- ✅ **Múltiplos Métodos de Entrada** - Interativo, inline ou baseado em arquivo
-- ✅ **Multiplataforma** - Linux, macOS, Windows (amd64/arm64)
 
 ## Documentação
 
@@ -178,29 +116,6 @@ Para opções detalhadas de configuração, consulte [docs/configuration.md](doc
 - **[Guia de Solução de Problemas](docs/troubleshooting.md)** - Problemas comuns e soluções
 - **[Instruções de Build](BUILD.md)** - Compilar a partir do código-fonte
 - **[Guia de Desenvolvimento](WARP.md)** - Desenvolvimento com WARP AI
-
-## Comandos Comuns
-
-```bash
-# Mostrar detalhes do segredo
-gsecutil describe my-secret
-
-# Mostrar histórico de versões
-gsecutil describe my-secret --show-versions
-
-# Ver logs de auditoria
-gsecutil auditlog my-secret
-
-# Gerenciar acesso
-gsecutil access list my-secret
-gsecutil access grant my-secret --principal user:alice@example.com
-
-# Validar configuração
-gsecutil config validate
-
-# Mostrar configuração
-gsecutil config show
-```
 
 ## Licença
 

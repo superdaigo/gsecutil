@@ -1,11 +1,11 @@
 # gsecutil - Google Secret Manager ユーティリティ
 
-🚀 設定ファイルサポートとチームフレンドリーな機能を備えた、Google Secret Manager のシンプルなコマンドラインラッパー。
+Google Secret Manager の簡略化されたコマンドラインラッパーです。プロジェクト単位のパスワードマネージャーのように動作し、直感的なコマンド、クリップボード統合、バージョン管理、チームフレンドリーな設定ファイル、監査ログでシークレットを保存、取得、管理できます。
 
 ## 🌍 言語バージョン
 
 - **English** - [README.md](README.md)
-- **日本語** - [README.ja.md](README.ja.md) (現在)
+- **日本語** - [README.ja.md](README.ja.md)（現在）
 - **中文** - [README.zh.md](README.zh.md)
 - **Español** - [README.es.md](README.es.md)
 - **हिंदी** - [README.hi.md](README.hi.md)
@@ -17,31 +17,8 @@
 
 ### インストール
 
-[リリースページ](https://github.com/superdaigo/gsecutil/releases)から、お使いのプラットフォーム用の最新バイナリをダウンロードしてください：
+お使いのプラットフォーム用の最新バイナリを[リリースページ](https://github.com/superdaigo/gsecutil/releases)からダウンロードするか、Go でインストールしてください：
 
-```bash
-# macOS Apple Silicon
-curl -L https://github.com/superdaigo/gsecutil/releases/latest/download/gsecutil-darwin-arm64 -o gsecutil
-chmod +x gsecutil
-sudo mv gsecutil /usr/local/bin/
-
-# macOS Intel
-curl -L https://github.com/superdaigo/gsecutil/releases/latest/download/gsecutil-darwin-amd64 -o gsecutil
-chmod +x gsecutil
-sudo mv gsecutil /usr/local/bin/
-
-# Linux
-curl -L https://github.com/superdaigo/gsecutil/releases/latest/download/gsecutil-linux-amd64 -o gsecutil
-chmod +x gsecutil
-sudo mv gsecutil /usr/local/bin/
-
-# Windows (PowerShell)
-Invoke-WebRequest -Uri "https://github.com/superdaigo/gsecutil/releases/latest/download/gsecutil-windows-amd64.exe" -OutFile "gsecutil.exe"
-# Move to a directory in your PATH, e.g., C:\Windows\System32
-Move-Item gsecutil.exe C:\Windows\System32\gsecutil.exe
-```
-
-または Go でインストール：
 ```bash
 go install github.com/superdaigo/gsecutil@latest
 ```
@@ -66,60 +43,42 @@ export GSECUTIL_PROJECT=YOUR_PROJECT_ID
 
 ## 基本的な使い方
 
-### シークレットの作成
+各プロジェクトには通常、プロジェクト ID、シークレット命名規則、メタデータ属性を保存する独自の設定ファイルがあります。
+
+### 1. 設定ファイルを作成する
+
+対話型セットアップを実行して設定ファイルを生成します。Google Cloud プロジェクト ID、シークレット名のプレフィックス、デフォルトの一覧表示属性、オプションのサンプル認証情報を入力するよう求められます。生成されたファイルはデフォルトでカレントディレクトリに `gsecutil.conf` として保存されます（`--home` を使用すると `~/.config/gsecutil/gsecutil.conf` に保存されます）。
+
 ```bash
-# 対話的な入力
-gsecutil create database-password
-
-# コマンドラインから
-gsecutil create api-key -d "sk-1234567890"
-
-# ファイルから
-gsecutil create config --data-file ./config.json
+gsecutil config init
 ```
 
-### シークレットの取得
+設定ファイルは以下の順序で検索されます：
+1. `--config` フラグ（指定されている場合）
+2. カレントディレクトリ：`gsecutil.conf`
+3. ホームディレクトリ：`~/.config/gsecutil/gsecutil.conf`
+
+### 2. シークレットを管理する
+
 ```bash
+# シークレットを作成
+gsecutil create database-password
+
 # 最新バージョンを取得
 gsecutil get database-password
 
 # クリップボードにコピー
-gsecutil get api-key --clipboard
+gsecutil get database-password --clipboard
 
-# 特定のバージョンを取得
-gsecutil get api-key --version 2
-```
-
-### シークレットの一覧表示
-```bash
-# すべてのシークレットを表示
+# すべてのシークレットを一覧表示
 gsecutil list
 
-# ラベルでフィルター
-gsecutil list --filter "labels.env=prod"
-```
-
-### シークレットの更新
-```bash
-# 対話的な入力
+# シークレットを更新
 gsecutil update database-password
 
-# コマンドラインから
-gsecutil update api-key -d "new-secret-value"
+# シークレットを削除
+gsecutil delete database-password
 ```
-
-### シークレットの削除
-```bash
-gsecutil delete old-secret
-```
-
-## 設定
-
-gsecutil はプロジェクト固有の設定のための設定ファイルをサポートしています。設定ファイルは次の順序で検索されます：
-
-1. `--config` フラグ（指定されている場合）
-2. カレントディレクトリ: `gsecutil.conf`
-3. ホームディレクトリ: `~/.config/gsecutil/gsecutil.conf`
 
 ### 設定例
 
@@ -137,7 +96,7 @@ list:
     - owner
     - environment
 
-# 認証情報のメタデータ（名前はベア名 — プレフィックスは自動的に付加）
+# 認証情報メタデータ（名前はベア名 — プレフィックスは自動的に付加）
 credentials:
   - name: "database-password"    # "team-shared-database-password" にアクセス
     title: "Production Database Password"
@@ -145,30 +104,9 @@ credentials:
     owner: "backend-team"
 ```
 
-> **プレフィックスは透過的:** プレフィックスが設定されている場合、コマンド・設定・CSV ファイルでは常にベア名（プレフィックスなし）を使用します。プレフィックスは自動的に付加・削除されます。
-
-### クイックスタート
-
-```bash
-# 対話的に設定を生成
-gsecutil config init
-
-# またはプロジェクト固有の設定を作成
-echo 'project: "my-project-123"' > gsecutil.conf
-```
+> **プレフィックスは透過的:** プレフィックスが設定されている場合、コマンド、設定、CSV ファイルでは常にベア名を使用します。プレフィックスは自動的に付加・削除されます。
 
 詳細な設定オプションについては、[docs/configuration.md](docs/configuration.md) を参照してください。
-
-## 主な機能
-
-- ✅ **シンプルな CRUD 操作** - シークレットを管理するための直感的なコマンド
-- ✅ **クリップボード統合** - シークレットをクリップボードに直接コピー
-- ✅ **バージョン管理** - 特定のバージョンへのアクセスとバージョンライフサイクルの管理
-- ✅ **設定ファイルサポート** - チームフレンドリーなメタデータと組織化
-- ✅ **アクセス管理** - 基本的な IAM ポリシー管理
-- ✅ **監査ログ** - 誰がいつシークレットにアクセスしたかを表示
-- ✅ **複数の入力方法** - 対話的、インライン、またはファイルベース
-- ✅ **クロスプラットフォーム** - Linux、macOS、Windows（amd64/arm64）
 
 ## ドキュメント
 
@@ -178,29 +116,6 @@ echo 'project: "my-project-123"' > gsecutil.conf
 - **[トラブルシューティングガイド](docs/troubleshooting.md)** - 一般的な問題と解決策
 - **[ビルド手順](BUILD.md)** - ソースからビルド
 - **[開発ガイド](WARP.md)** - WARP AI での開発
-
-## よく使うコマンド
-
-```bash
-# シークレットの詳細を表示
-gsecutil describe my-secret
-
-# バージョン履歴を表示
-gsecutil describe my-secret --show-versions
-
-# 監査ログを表示
-gsecutil auditlog my-secret
-
-# アクセスを管理
-gsecutil access list my-secret
-gsecutil access grant my-secret --principal user:alice@example.com
-
-# 設定を検証
-gsecutil config validate
-
-# 設定を表示
-gsecutil config show
-```
 
 ## ライセンス
 
