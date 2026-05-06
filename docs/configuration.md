@@ -78,7 +78,9 @@ Configuration files use YAML format and support the following sections:
 ### Basic Configuration
 
 ```yaml
-# Google Cloud Project (required)
+# Google Cloud Project (optional, 2nd priority - see "Setting Value Priority" section)
+# Can be set via: --project flag, config file, GSECUTIL_PROJECT env var, or gcloud default
+# Recommended for teams to ensure all members share the same project
 project: "my-team-project-123"
 
 # Secret name prefix (optional but recommended)
