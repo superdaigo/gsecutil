@@ -111,18 +111,16 @@ func prepareCsvRecords(secrets []SecretInfo, withValues bool, project string) []
 	labelKeys := make(map[string]bool)
 	configAttrs := make(map[string]bool)
 
-	prefix := GetPrefix()
 	for _, secret := range secrets {
 		name := extractSecretName(secret.Name)
-		credName := strings.TrimPrefix(name, prefix) // strip prefix for config lookup
 
 		// Collect label keys
 		for key := range secret.Labels {
 			labelKeys[key] = true
 		}
 
-		// Collect config attributes
-		if credInfo := GetCredentialInfo(credName); credInfo != nil {
+		// Collect config attributes using full name
+		if credInfo := GetCredentialInfo(name); credInfo != nil {
 			for key := range credInfo.Attributes {
 				configAttrs[key] = true
 			}
@@ -160,8 +158,7 @@ func prepareCsvRecords(secrets []SecretInfo, withValues bool, project string) []
 	// Build data rows
 	for _, secret := range secrets {
 		name := extractSecretName(secret.Name)
-		credName := strings.TrimPrefix(name, prefix) // strip prefix for config lookup
-		row := []string{credName}                    // export bare name (without prefix)
+		row := []string{name} // export full secret name (with prefix)
 
 		// Add value if requested
 		if withValues {
@@ -170,7 +167,7 @@ func prepareCsvRecords(secrets []SecretInfo, withValues bool, project string) []
 		}
 
 		// Add title from config
-		credInfo := GetCredentialInfo(credName)
+		credInfo := GetCredentialInfo(name)
 		if credInfo != nil && credInfo.Title != "" {
 			row = append(row, credInfo.Title)
 		} else {
